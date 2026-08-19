@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Parametrage } from "./Parametrage";
 import { Dossiers } from "./Dossiers";
+import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/utils";
 
 type View = "parametrage" | "dossiers";
@@ -38,7 +39,7 @@ export function Shell() {
           </span>
           {open && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">MedFlow ERP</p>
+              <p className="truncate text-sm font-semibold">CLINIQUE ASSALAM ERP</p>
               <p className="truncate text-[11px] text-muted-foreground">Clinique · Santé</p>
             </div>
           )}
@@ -49,7 +50,7 @@ export function Shell() {
           className="glass-soft flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium"
         >
           <FolderHeart className="size-4 shrink-0 text-accent" />
-          {open && <span className="flex-1 text-left">Interventions</span>}
+          {open && <span className="flex-1 text-left">AI Interventions</span>}
           {open && (
             <ChevronDown className={cn("size-4 transition-transform", group && "rotate-180")} />
           )}
@@ -77,29 +78,35 @@ export function Shell() {
           </nav>
         )}
 
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className="mt-auto flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {open ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
-          {open && "Réduire"}
-        </button>
+        <div className="mt-auto flex flex-col gap-2">
+          <ThemeToggle showLabel={open} />
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {open ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
+            {open && "Réduire"}
+          </button>
+        </div>
       </aside>
 
       <main className="min-w-0 flex-1 p-4 md:p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 md:hidden">
-          {items.map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => setView(id)}
-              className={cn(
-                "glass-soft rounded-xl px-3 py-2 text-xs",
-                view === id && "glow-ring text-accent",
-              )}
-            >
-              {label}
-            </button>
-          ))}
+          <div className="flex flex-wrap gap-2">
+            {items.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                className={cn(
+                  "glass-soft rounded-xl px-3 py-2 text-xs",
+                  view === id && "glow-ring text-accent",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <ThemeToggle />
         </div>
         {view === "parametrage" ? <Parametrage /> : <Dossiers />}
       </main>
