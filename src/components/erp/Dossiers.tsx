@@ -442,53 +442,50 @@ function Wizard({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="glass flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
-        <div className="flex items-center gap-3">
-          <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
-            <Stethoscope className="size-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">Nouveau Dossier</p>
-            <p className="text-[11px] text-muted-foreground">
-              Patient : {PATIENT.nom} | CIN : {PATIENT.cin} | Organisme :{" "}
-              {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
-              {st.interventions.find((p) => p.id === st.dosProfil)?.name}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Segmented
-            value={st.dosMode}
-            onChange={(v) => st.setDos({ dosMode: v as Mode })}
-            options={MODES.map((m) => ({ value: m.id, label: m.label }))}
-          />
-          <select
-            value={st.dosProfil}
-            onChange={(e) => st.setDos({ dosProfil: e.target.value })}
-            className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
+      <div className="glass rounded-2xl px-5 py-4">
+        <div className="mb-3 flex justify-end">
+          <Button
+            className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+            onClick={onExit}
           >
-            {st.interventions.map((p) => (
-              <option key={p.id} value={p.id} className="bg-popover">
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={st.dosOrg}
-            onChange={(e) => st.setDos({ dosOrg: e.target.value })}
-            className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
-          >
-            {ORGANISMES.map((o) => (
-              <option key={o.id} value={o.id} className="bg-popover">
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <Button variant="secondary" className="rounded-xl" onClick={onExit}>
             <ArrowLeft className="size-4" /> Retour
           </Button>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
+              <Stethoscope className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Nouveau Dossier</p>
+              <p className="text-[11px] text-muted-foreground">
+                Patient : {PATIENT.nom} | CIN : {PATIENT.cin} | Organisme :{" "}
+                {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
+                {st.interventions.find((p) => p.id === st.dosProfil)?.name}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Segmented
+              value={st.dosMode}
+              onChange={(v) => st.setDos({ dosMode: v as Mode })}
+              options={MODES.map((m) => ({ value: m.id, label: m.label }))}
+            />
+            <select
+              value={st.dosProfil}
+              onChange={(e) => st.setDos({ dosProfil: e.target.value })}
+              className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
+            >
+              {st.interventions.map((p) => (
+                <option key={p.id} value={p.id} className="bg-popover">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
+
 
       {/* Stepper / fil d'Ariane */}
       <div className="glass flex flex-wrap items-center justify-center gap-3 rounded-2xl px-5 py-3">
