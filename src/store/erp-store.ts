@@ -99,6 +99,7 @@ type Actions = {
   setGenerated: (v: string | null) => void;
   setTransmitted: (v: boolean) => void;
   commitDossier: (statut: DossierRecord["statut"]) => void;
+  removeDossier: (id: string) => void;
 };
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -377,10 +378,19 @@ export const useErp = create<State & Actions>((set, get) => ({
       generated: null,
     })),
   straightenAll: () =>
-    set((st) => ({ scans: st.scans.map((s) => ({ ...s, angle: 0, straightened: true })) })),
+    set((st) => ({
+      scans: st.scans.map((s) => ({
+        ...s,
+        // La demande de PEC conserve sa rotation automatique de 270°
+        angle: s.pieceId === "demande_pec" ? 270 : 0,
+        straightened: true,
+      })),
+    })),
   setAuditRan: (v) => set({ auditRan: v }),
   setGenerated: (v) => set({ generated: v }),
   setTransmitted: (v) => set({ transmitted: v }),
+
+  removeDossier: (id) => set((st) => ({ dossiers: st.dossiers.filter((d) => d.id !== id) })),
 
   commitDossier: (statut) =>
     set((st) => {
