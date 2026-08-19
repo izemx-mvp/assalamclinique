@@ -28,8 +28,9 @@ import {
 } from "@/components/ui/dialog";
 import { MODES, ORGANISMES, type Mode } from "@/lib/erp/catalog";
 import { detectFromName, hasAnomaly, isCarteMutuelleFile } from "@/lib/erp/detect";
+import { buildDossierPdf, dossierFileName, dossierPdfUrl } from "@/lib/erp/dossier-pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
-import { Panel, Segmented } from "./ui-bits";
+import { Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
 const PATIENT = {
