@@ -10,12 +10,8 @@
  * The @theme inline block maps CSS custom properties to Tailwind utility
  * classes (e.g. --color-primary -> bg-primary, text-primary).
  *
- * The :root and .dark blocks define the actual color values using oklch.
+ * :root holds the light theme, .dark the navy glassmorphism dark theme.
  * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
  */
 
 @theme inline {
@@ -59,10 +55,71 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
 }
 
 :root {
   --radius: 0.9rem;
+  --background: oklch(0.97 0.012 250);
+  --foreground: oklch(0.24 0.045 265);
+  --card: oklch(1 0 0 / 70%);
+  --card-foreground: oklch(0.24 0.045 265);
+  --popover: oklch(0.99 0.005 250);
+  --popover-foreground: oklch(0.24 0.045 265);
+  --primary: oklch(0.52 0.18 262);
+  --primary-foreground: oklch(0.99 0.005 250);
+  --secondary: oklch(0.92 0.02 255);
+  --secondary-foreground: oklch(0.28 0.05 264);
+  --muted: oklch(0.92 0.02 255);
+  --muted-foreground: oklch(0.48 0.035 258);
+  --accent: oklch(0.5 0.16 258);
+  --accent-foreground: oklch(0.99 0.005 250);
+  --destructive: oklch(0.58 0.21 25);
+  --destructive-foreground: oklch(0.99 0.005 250);
+  --success: oklch(0.55 0.14 160);
+  --success-foreground: oklch(0.99 0.005 250);
+  --border: oklch(0.3 0.06 264 / 14%);
+  --input: oklch(0.3 0.06 264 / 18%);
+  --ring: oklch(0.52 0.18 262);
+  --chart-1: oklch(0.52 0.18 262);
+  --chart-2: oklch(0.6 0.14 250);
+  --chart-3: oklch(0.55 0.14 160);
+  --chart-4: oklch(0.58 0.21 25);
+  --chart-5: oklch(0.7 0.1 240);
+  --sidebar: oklch(1 0 0 / 70%);
+  --sidebar-foreground: oklch(0.24 0.045 265);
+  --sidebar-primary: oklch(0.52 0.18 262);
+  --sidebar-primary-foreground: oklch(0.99 0.005 250);
+  --sidebar-accent: oklch(0.92 0.02 255);
+  --sidebar-accent-foreground: oklch(0.24 0.045 265);
+  --sidebar-border: oklch(0.3 0.06 264 / 12%);
+  --sidebar-ring: oklch(0.52 0.18 262);
+
+  --app-gradient: radial-gradient(
+      1200px 700px at 12% -10%,
+      oklch(0.82 0.07 262 / 60%),
+      transparent 60%
+    ),
+    radial-gradient(900px 600px at 95% 0%, oklch(0.85 0.06 250 / 55%), transparent 55%),
+    linear-gradient(160deg, #eef3fb 0%, #e4ecf9 55%, #dde8f8 100%);
+
+  --glass-bg: linear-gradient(
+    145deg,
+    oklch(1 0 0 / 85%) 0%,
+    oklch(1 0 0 / 65%) 40%,
+    oklch(0.85 0.05 262 / 45%) 100%
+  );
+  --glass-border: oklch(0.3 0.06 264 / 12%);
+  --glass-shadow: 0 18px 45px -22px oklch(0.35 0.08 265 / 45%), inset 0 1px 0 oklch(1 0 0 / 60%);
+  --glass-soft-bg: oklch(1 0 0 / 55%);
+  --glass-soft-border: oklch(0.3 0.06 264 / 10%);
+  --scrollbar-thumb: oklch(0.4 0.06 264 / 28%);
+  --scrollbar-thumb-hover: oklch(0.4 0.06 264 / 45%);
+}
+
+.dark {
+  color-scheme: dark;
   --background: oklch(0.16 0.045 265);
   --foreground: oklch(0.96 0.01 250);
   --card: oklch(0.24 0.06 264 / 55%);
@@ -97,6 +154,7 @@
   --sidebar-accent-foreground: oklch(0.96 0.01 250);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.62 0.19 260);
+
   --app-gradient: radial-gradient(
       1200px 700px at 12% -10%,
       oklch(0.32 0.11 262 / 55%),
@@ -104,15 +162,19 @@
     ),
     radial-gradient(900px 600px at 95% 0%, oklch(0.35 0.1 250 / 40%), transparent 55%),
     linear-gradient(160deg, #050b18 0%, #0a1735 55%, #0f2347 100%);
-}
 
-.dark {
-  color-scheme: dark;
-}
-
-@theme inline {
-  --color-success: var(--success);
-  --color-success-foreground: var(--success-foreground);
+  --glass-bg: linear-gradient(
+    145deg,
+    oklch(1 0 0 / 9%) 0%,
+    oklch(1 0 0 / 4%) 40%,
+    oklch(0.5 0.1 262 / 8%) 100%
+  );
+  --glass-border: oklch(1 0 0 / 10%);
+  --glass-shadow: 0 18px 45px -18px oklch(0.05 0.05 265 / 90%), inset 0 1px 0 oklch(1 0 0 / 8%);
+  --glass-soft-bg: oklch(1 0 0 / 4%);
+  --glass-soft-border: oklch(1 0 0 / 8%);
+  --scrollbar-thumb: oklch(1 0 0 / 16%);
+  --scrollbar-thumb-hover: oklch(1 0 0 / 30%);
 }
 
 @layer base {
@@ -126,30 +188,52 @@
     color: var(--color-foreground);
     min-height: 100vh;
   }
+
+  /* Thin, discreet, semi-transparent scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 @utility glass {
-  background: linear-gradient(
-    145deg,
-    oklch(1 0 0 / 9%) 0%,
-    oklch(1 0 0 / 4%) 40%,
-    oklch(0.5 0.1 262 / 8%) 100%
-  );
+  background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid oklch(1 0 0 / 10%);
-  box-shadow:
-    0 18px 45px -18px oklch(0.05 0.05 265 / 90%),
-    inset 0 1px 0 oklch(1 0 0 / 8%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 @utility glass-soft {
-  background: oklch(1 0 0 / 4%);
+  background: var(--glass-soft-bg);
   backdrop-filter: blur(10px);
-  border: 1px solid oklch(1 0 0 / 8%);
+  border: 1px solid var(--glass-soft-border);
 }
 
 @utility glow-ring {
-  box-shadow: 0 0 0 1px oklch(0.62 0.19 260 / 45%), 0 0 28px -6px oklch(0.62 0.19 260 / 55%);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--color-primary) 45%, transparent),
+    0 0 28px -6px color-mix(in oklch, var(--color-primary) 55%, transparent);
 }
-
