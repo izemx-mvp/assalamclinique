@@ -40,9 +40,43 @@ export function Parametrage() {
   const available = st.pieces.filter((p) => !entries.some((e) => e.pieceId === p.id));
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+    <div className="flex flex-col gap-5">
+      <div className="glass flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
+            <SlidersHorizontal className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Paramétrage des Interventions</p>
+            <p className="text-[11px] text-muted-foreground">
+              Matrices de pièces, ordre strict et règles d'audit — synchronisés en temps réel
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            value={newProfil}
+            onChange={(e) => setNewProfil(e.target.value)}
+            placeholder="Nouvelle intervention…"
+            className="glass-soft h-10 w-[220px] rounded-xl border-0 text-sm"
+          />
+          <Button
+            className="rounded-xl"
+            onClick={() => {
+              if (!newProfil.trim()) return;
+              st.addProfil(newProfil.trim());
+              setNewProfil("");
+              toast.success("Intervention créée");
+            }}
+          >
+            <Plus className="size-4" /> Créer
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <div className="flex flex-col gap-5">
-        <Panel
+
           title="Profils d'intervention"
           subtitle="Sélectionnez le profil à configurer"
         >
