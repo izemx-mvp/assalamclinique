@@ -126,7 +126,7 @@ export function Dossiers() {
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     for (let i = 0; i < ordered.length; i++) {
-      const s = ordered[i];
+      const s = ordered[i]!;
       if (i > 0) doc.addPage();
       doc.setFontSize(11);
       doc.text(
