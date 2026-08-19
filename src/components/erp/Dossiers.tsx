@@ -496,7 +496,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
       />
 
       {step === 1 && (
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="flex flex-col gap-5">
           <Panel title="Scanner et Importer">
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -609,7 +609,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
       )}
 
       {step === 2 && (
-        <div className="grid gap-5 xl:grid-cols-2">
+        <div className="flex flex-col gap-5">
           <Panel
             title="Journal d'Audit IA"
             action={
@@ -720,7 +720,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
 
       {step === 3 && (
         <Panel title="Aperçu & Transmission" subtitle={`${ordered.length} page(s) ordonnée(s)`}>
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+          <div className="flex flex-col gap-5">
             <div className="flex max-h-[420px] flex-col gap-2 overflow-y-auto pr-1">
               {ordered.map((s, i) => (
                 <button
