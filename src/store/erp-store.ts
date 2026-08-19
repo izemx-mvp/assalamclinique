@@ -139,7 +139,7 @@ export const useErp = create<State & Actions>((set, get) => ({
       const i = actives.findIndex((e) => e.pieceId === pieceId);
       const j = i + dir;
       if (i < 0 || j < 0 || j >= actives.length) return {};
-      [actives[i], actives[j]] = [actives[j], actives[i]];
+      [actives[i], actives[j]] = [actives[j]!, actives[i]!];
       const inactives = cur.filter((e) => !e.active);
       return { draft: { ...s.draft, [key]: [...actives, ...inactives] } };
     }),
@@ -153,7 +153,7 @@ export const useErp = create<State & Actions>((set, get) => ({
       const to = actives.findIndex((e) => e.pieceId === toId);
       if (from < 0 || to < 0 || from === to) return {};
       const [moved] = actives.splice(from, 1);
-      actives.splice(to, 0, moved);
+      actives.splice(to, 0, moved!);
       const inactives = cur.filter((e) => !e.active);
       return { draft: { ...s.draft, [key]: [...actives, ...inactives] } };
     }),
@@ -187,10 +187,10 @@ export const useErp = create<State & Actions>((set, get) => ({
       const draft = { ...s.draft };
       const saved = { ...s.saved };
       Object.keys(s.draft).forEach((k) => {
-        if (k.startsWith(`${id}|`)) draft[k.replace(`${id}|`, `${nid}|`)] = s.draft[k].map((e) => ({ ...e }));
+        if (k.startsWith(`${id}|`)) draft[k.replace(`${id}|`, `${nid}|`)] = s.draft[k]!.map((e) => ({ ...e }));
       });
       Object.keys(s.saved).forEach((k) => {
-        if (k.startsWith(`${id}|`)) saved[k.replace(`${id}|`, `${nid}|`)] = s.saved[k].map((e) => ({ ...e }));
+        if (k.startsWith(`${id}|`)) saved[k.replace(`${id}|`, `${nid}|`)] = s.saved[k]!.map((e) => ({ ...e }));
       });
       return { profils: [...s.profils, { id: nid, name: `${src.name} (copie)` }], draft, saved };
     }),
