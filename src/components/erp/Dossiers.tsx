@@ -10,6 +10,8 @@ import {
   Search,
   Send,
   Sparkles,
+  Stethoscope,
+
   Trash2,
   Upload,
 } from "lucide-react";
@@ -46,7 +48,9 @@ export function Dossiers() {
   );
 
   const [search, setSearch] = useState("");
+  const [extraDoc, setExtraDoc] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+
   const [pending, setPending] = useState<Scan | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
@@ -149,8 +153,17 @@ export function Dossiers() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Panel title="Dossiers Interventions / ERP Clinique — Audit IA">
+      <div className="glass rounded-2xl px-5 py-4">
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
+            <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
+              <Stethoscope className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Dossiers Interventions</p>
+              <p className="text-[11px] text-muted-foreground">ERP Clinique — Audit IA</p>
+            </div>
+          </div>
           <Segmented
             value={st.dosMode}
             onChange={(v) => st.setDos({ dosMode: v as Mode })}
@@ -167,23 +180,12 @@ export function Dossiers() {
               </option>
             ))}
           </select>
-          <select
-            value={st.dosOrg}
-            onChange={(e) => st.setDos({ dosOrg: e.target.value })}
-            className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
-          >
-            {ORGANISMES.map((o) => (
-              <option key={o.id} value={o.id} className="bg-popover">
-                {o.label}
-              </option>
-            ))}
-          </select>
           <div className="relative min-w-[220px] flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher une pièce, un patient…"
+              placeholder="Rechercher : CIN patient / assuré, nom, N° dossier…"
               className="glass-soft h-10 rounded-xl border-0 pl-9"
             />
           </div>
@@ -196,14 +198,23 @@ export function Dossiers() {
         <p className="mt-3 text-[11px] text-muted-foreground">
           Patient : {PATIENT.nom} | CIN Patient : {PATIENT.cin} | CIN Assuré : {PATIENT.cin} |
           Assuré : {PATIENT.nom} (lui-même) | Organisme :{" "}
-          {ORGANISMES.find((o) => o.id === st.dosOrg)?.label}
+          {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
+          {st.profils.find((p) => p.id === st.dosProfil)?.name}
         </p>
-      </Panel>
+      </div>
+
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="flex flex-col gap-5">
-          <Panel title="Checklist dynamique" subtitle="Pièces attendues issues du paramétrage">
-            <div className="flex flex-col gap-2">
+          <Panel
+            title={`Checklist des exigences (${required.length})`}
+            action={
+              <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                {required.filter((id) => satisfied(id)).length}/{required.length} conformes
+              </span>
+            }
+          >
+            <div className="flex flex-col gap-2.5">
               {required
                 .filter((id) =>
                   (labels[id] ?? id).toLowerCase().includes(search.toLowerCase()),
@@ -213,36 +224,73 @@ export function Dossiers() {
                   return (
                     <div
                       key={id}
-                      className={`glass-soft flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                      className={`glass-soft flex items-center gap-3 rounded-xl px-3 py-3 ${
                         ok ? "border-success/40" : ""
                       }`}
                     >
-                      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/25 text-[11px] text-accent">
+                      <span className="w-4 shrink-0 text-center text-[11px] text-muted-foreground">
                         {i + 1}
                       </span>
-                      <span
-                        className={`min-w-0 flex-1 truncate text-sm ${ok ? "text-success" : "text-muted-foreground"}`}
-                      >
-                        {labels[id] ?? id}
-                      </span>
-                      {id === "cin_assure" && (
-                        <span className="text-[10px] text-muted-foreground">Patient = Assuré</span>
-                      )}
-                      {id === "cin_patient" && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {hasSide("recto") ? "R✓" : "R–"} {hasSide("verso") ? "V✓" : "V–"}
-                        </span>
-                      )}
                       {ok ? (
-                        <CheckCircle2 className="size-4 text-success" />
+                        <CheckCircle2 className="size-4 shrink-0 text-success" />
                       ) : (
-                        <AlertTriangle className="size-4 text-destructive" />
+                        <span className="size-4 shrink-0 rounded-full border border-muted-foreground/50" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-sm ${ok ? "text-success" : "text-foreground"}`}>
+                          {labels[id] ?? id}
+                        </p>
+                        {id === "cin_patient" && (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            Recto {hasSide("recto") ? "✓" : "–"} · Verso{" "}
+                            {hasSide("verso") ? "✓" : "–"}
+                          </p>
+                        )}
+                        {id === "cin_assure" && (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            Patient = Assuré (couvert par la CIN patient)
+                          </p>
+                        )}
+                      </div>
+                      {id === "cin_assure" && (
+                        <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[10px] text-accent">
+                          auto
+                        </span>
                       )}
                     </div>
                   );
                 })}
+              <div className="glass-soft flex items-center gap-2 rounded-xl px-3 py-2">
+                <Input
+                  value={extraDoc}
+                  onChange={(e) => setExtraDoc(e.target.value)}
+                  placeholder="Ajouter un document supplémentaire…"
+                  className="h-8 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+                />
+                <Button
+                  size="icon"
+                  className="size-8 shrink-0 rounded-lg"
+                  onClick={() => {
+                    const label = extraDoc.trim();
+                    if (!label) return;
+                    st.setSel({
+                      selProfil: st.dosProfil,
+                      selOrg: st.dosOrg,
+                      selMode: st.dosMode,
+                    });
+                    st.createPiece(label);
+
+                    st.saveOrder();
+                    setExtraDoc("");
+                    toast.success("Document ajouté à la checklist");
+                  }}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
             </div>
           </Panel>
+
 
           <Panel title="Zone de dépôt des scans">
             <div
@@ -334,7 +382,7 @@ export function Dossiers() {
         </div>
 
         <div className="flex flex-col gap-5">
-          <Panel title="Aperçu document" subtitle={current?.fileName ?? "Aucun document"}>
+          <Panel title="Aperçu du document">
             <div className="glass-soft grid min-h-[320px] place-items-center overflow-hidden rounded-2xl p-3">
               {current ? (
                 current.mime.startsWith("image/") ? (
@@ -357,9 +405,13 @@ export function Dossiers() {
                   </object>
                 )
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Sélectionnez une pièce dans l'ordre du dossier
-                </p>
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <FileText className="size-14 text-muted-foreground/60" />
+                  <p className="text-sm font-medium">Aucun scan importé</p>
+                  <p className="text-xs text-muted-foreground">
+                    Déposez un PDF ou une image pour lancer l'aperçu réel.
+                  </p>
+                </div>
               )}
             </div>
             <input
@@ -371,7 +423,10 @@ export function Dossiers() {
                 e.target.value = "";
               }}
             />
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <span className="truncate text-[11px] text-muted-foreground">
+                {current?.fileName ?? "—"}
+              </span>
               <Button
                 variant="secondary"
                 className="rounded-xl"
@@ -386,7 +441,15 @@ export function Dossiers() {
             </div>
           </Panel>
 
-          <Panel title="Journal d'audit IA">
+          <Panel
+            title="Journal d'audit IA"
+            action={
+              <span className="text-[11px] text-muted-foreground">
+                {st.auditRan ? "Contrôle effectué" : "Contrôle non lancé"}
+              </span>
+            }
+          >
+
             <div className="flex items-center justify-center gap-3">
               <Button
                 className="rounded-xl"

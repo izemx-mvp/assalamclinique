@@ -6,7 +6,10 @@ import {
   GripVertical,
   Plus,
   Save,
+  SlidersHorizontal,
   Trash2,
+
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,10 +43,45 @@ export function Parametrage() {
   const available = st.pieces.filter((p) => !entries.some((e) => e.pieceId === p.id));
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+    <div className="flex flex-col gap-5">
+      <div className="glass flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
+            <SlidersHorizontal className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Paramétrage des Interventions</p>
+            <p className="text-[11px] text-muted-foreground">
+              Matrices de pièces, ordre strict et règles d'audit — synchronisés en temps réel
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            value={newProfil}
+            onChange={(e) => setNewProfil(e.target.value)}
+            placeholder="Nouvelle intervention…"
+            className="glass-soft h-10 w-[220px] rounded-xl border-0 text-sm"
+          />
+          <Button
+            className="rounded-xl"
+            onClick={() => {
+              if (!newProfil.trim()) return;
+              st.addProfil(newProfil.trim());
+              setNewProfil("");
+              toast.success("Intervention créée");
+            }}
+          >
+            <Plus className="size-4" /> Créer
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <div className="flex flex-col gap-5">
         <Panel
           title="Profils d'intervention"
+
           subtitle="Sélectionnez le profil à configurer"
         >
           <div className="flex max-h-[280px] flex-col gap-2 overflow-y-auto pr-1">
@@ -87,12 +125,8 @@ export function Parametrage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <Button onClick={() => setProfilOpen(true)} className="rounded-xl">
-              <Plus className="size-4" /> Nouveau profil d'intervention
-            </Button>
-          </div>
         </Panel>
+
 
         <Panel
           title="Référentiel des pièces"
@@ -167,11 +201,31 @@ export function Parametrage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <Button variant="secondary" className="rounded-xl" onClick={() => setDocOpen(true)}>
-              <Plus className="size-4" /> Ajouter un document type
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Input
+              value={customDoc}
+              onChange={(e) => setCustomDoc(e.target.value)}
+              placeholder="Document personnalisé…"
+              className="glass-soft h-10 w-[220px] rounded-xl border-0 text-sm"
+            />
+            <Button
+              variant="secondary"
+              className="rounded-xl"
+              onClick={() => {
+                const label = customDoc.trim();
+                if (label) {
+                  st.createPiece(label);
+                  setCustomDoc("");
+                  toast.success("Document ajouté au catalogue");
+                } else {
+                  setDocOpen(true);
+                }
+              }}
+            >
+              <Plus className="size-4" /> Ajouter au catalogue
             </Button>
           </div>
+
         </Panel>
       </div>
 
@@ -253,6 +307,9 @@ export function Parametrage() {
           </Button>
         </div>
       </Panel>
+      </div>
+
+
 
       <Dialog open={profilOpen} onOpenChange={setProfilOpen}>
         <DialogContent className="glass">
