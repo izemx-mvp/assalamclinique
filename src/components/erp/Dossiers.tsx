@@ -268,6 +268,11 @@ function Wizard({ onExit }: { onExit: () => void }) {
   const satisfied = (pieceId: string) => {
     if (pieceId === "cin_assure") return true;
     if (pieceId === "cin_patient") return hasSide("recto") && hasSide("verso");
+    // Règle stricte : la carte mutuelle exige un fichier nommé "carte mut…"
+    if (pieceId === "carte_mutuelle")
+      return st.scans.some(
+        (s) => s.pieceId === "carte_mutuelle" && isCarteMutuelleFile(s.fileName),
+      );
     return st.scans.some((s) => s.pieceId === pieceId);
   };
 
