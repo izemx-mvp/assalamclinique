@@ -1,15 +1,15 @@
 import { useMemo, useState } from "react";
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowUp,
   Copy,
   GripVertical,
+  Pencil,
   Plus,
   Save,
   SlidersHorizontal,
   Trash2,
-
-
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,24 +23,74 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { MODES, ORGANISMES, type Mode } from "@/lib/erp/catalog";
-import { useErp } from "@/store/erp-store";
+import { useErp, type Intervention } from "@/store/erp-store";
 import { Panel, Segmented } from "./ui-bits";
+import { cn } from "@/lib/utils";
+
+const SPECIALITES = [
+  "Chirurgie viscérale",
+  "Gynécologie-obstétrique",
+  "Ophtalmologie",
+  "Orthopédie",
+  "ORL",
+  "Cardiologie",
+  "Urologie",
+  "Générale",
+];
+
+type FormState = {
+  id: string | null;
+  name: string;
+  specialite: string;
+  defaultMode: Mode;
+};
+
+const emptyForm: FormState = {
+  id: null,
+  name: "",
+  specialite: SPECIALITES[0]!,
+  defaultMode: "PEC",
+};
 
 export function Parametrage() {
   const st = useErp();
-  const entries = useErp((s) => s.entries)(st.selProfil, st.selOrg, st.selMode);
-  const pieceLabel = useMemo(
-    () => Object.fromEntries(st.pieces.map((p) => [p.id, p.label])),
-    [st.pieces],
-  );
-  const actives = entries.filter((e) => e.active);
-  const [newProfil, setNewProfil] = useState("");
-  const [profilOpen, setProfilOpen] = useState(false);
-  const [docOpen, setDocOpen] = useState(false);
-  const [customDoc, setCustomDoc] = useState("");
-  const [dragId, setDragId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [formOpen, setFormOpen] = useState(false);
 
-  const available = st.pieces.filter((p) => !entries.some((e) => e.pieceId === p.id));
+  const openCreate = () => {
+    setForm(emptyForm);
+    setFormOpen(true);
+  };
+
+  const openEdit = (i: Intervention) => {
+    setForm({ id: i.id, name: i.name, specialite: i.specialite, defaultMode: i.defaultMode });
+    setFormOpen(true);
+  };
+
+  const submit = () => {
+    if (!form.name.trim()) {
+      toast.error("Le nom de l'intervention est requis");
+      return;
+    }
+    if (form.id) {
+      st.updateIntervention(form.id, {
+        name: form.name.trim(),
+        specialite: form.specialite,
+        defaultMode: form.defaultMode,
+      });
+      toast.success("Intervention modifiée");
+    } else {
+      st.addIntervention({
+        name: form.name.trim(),
+        specialite: form.specialite,
+        defaultMode: form.defaultMode,
+      });
+      toast.success("Intervention créée");
+    }
+    setFormOpen(false);
+    setForm(emptyForm);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -52,197 +102,225 @@ export function Parametrage() {
           <div className="min-w-0">
             <p className="text-sm font-semibold">Paramétrage des Interventions</p>
             <p className="text-[11px] text-muted-foreground">
-              Matrices de pièces, ordre strict et règles d'audit — synchronisés en temps réel
+              Catalogue des interventions, référentiels de pièces et ordre strict
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Input
-            value={newProfil}
-            onChange={(e) => setNewProfil(e.target.value)}
-            placeholder="Nouvelle intervention…"
-            className="glass-soft h-10 w-[220px] rounded-xl border-0 text-sm"
-          />
-          <Button
-            className="rounded-xl"
-            onClick={() => {
-              if (!newProfil.trim()) return;
-              st.addProfil(newProfil.trim());
-              setNewProfil("");
-              toast.success("Intervention créée");
-            }}
-          >
-            <Plus className="size-4" /> Créer
+        {detail ? (
+          <Button variant="secondary" className="rounded-xl" onClick={() => setDetail(null)}>
+            <ArrowLeft className="size-4" /> Retour à la liste
           </Button>
-        </div>
+        ) : (
+          <Button className="rounded-xl" onClick={openCreate}>
+            <Plus className="size-4" /> Ajouter une intervention
+          </Button>
+        )}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      <div className="flex flex-col gap-5">
-        <Panel
-          title="Profils d'intervention"
-
-          subtitle="Sélectionnez le profil à configurer"
-        >
-          <div className="flex max-h-[280px] flex-col gap-2 overflow-y-auto pr-1">
-            {st.profils.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => st.setSel({ selProfil: p.id })}
-                className={`group flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-all ${
-                  st.selProfil === p.id
-                    ? "glass glow-ring text-foreground"
-                    : "glass-soft text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span className="font-medium">{p.name}</span>
-                <span className="flex items-center gap-1">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-8 text-muted-foreground hover:text-accent"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      st.duplicateProfil(p.id);
-                      toast.success("Profil dupliqué");
+      {detail ? (
+        <Referentiel interventionId={detail} />
+      ) : (
+        <Panel title="Interventions" subtitle="Cliquez sur une ligne pour configurer son référentiel">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[880px] border-separate border-spacing-y-2 text-sm">
+              <thead>
+                <tr className="text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                  <th className="px-3 pb-1 font-medium">ID</th>
+                  <th className="px-3 pb-1 font-medium">Nom d'intervention</th>
+                  <th className="px-3 pb-1 font-medium">Spécialité</th>
+                  <th className="px-3 pb-1 font-medium">Créé le</th>
+                  <th className="px-3 pb-1 font-medium">Créé par</th>
+                  <th className="px-3 pb-1 font-medium">Statut</th>
+                  <th className="px-3 pb-1 text-right font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {st.interventions.map((i) => (
+                  <tr
+                    key={i.id}
+                    onClick={() => {
+                      st.setSel({ selProfil: i.id, selMode: i.defaultMode });
+                      setDetail(i.id);
                     }}
+                    className="glass-soft cursor-pointer [&>td]:transition-colors hover:[&>td]:bg-primary/5"
                   >
-                    <Copy className="size-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-8 text-destructive hover:bg-destructive/15 hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      st.removeProfil(p.id);
-                      toast.success("Profil supprimé");
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </span>
-              </div>
-            ))}
+                    <td className="rounded-l-xl px-3 py-3 font-mono text-xs text-accent">
+                      {i.code}
+                    </td>
+                    <td className="px-3 py-3 font-medium">{i.name}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{i.specialite}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{i.createdAt}</td>
+                    <td className="px-3 py-3 text-muted-foreground">{i.createdBy}</td>
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                      <span className="flex items-center gap-2">
+                        <Switch
+                          checked={i.active}
+                          onCheckedChange={(v) => {
+                            st.updateIntervention(i.id, { active: v });
+                            toast.success(v ? "Intervention activée" : "Intervention désactivée");
+                          }}
+                        />
+                        <span
+                          className={cn(
+                            "text-[11px]",
+                            i.active ? "text-success" : "text-muted-foreground",
+                          )}
+                        >
+                          {i.active ? "Activée" : "Désactivée"}
+                        </span>
+                      </span>
+                    </td>
+                    <td
+                      className="rounded-r-xl px-3 py-3 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8"
+                          title="Modifier"
+                          onClick={() => openEdit(i)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 hover:text-accent"
+                          title="Dupliquer"
+                          onClick={() => {
+                            st.duplicateIntervention(i.id);
+                            toast.success("Intervention dupliquée");
+                          }}
+                        >
+                          <Copy className="size-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-8 text-destructive hover:bg-destructive/15"
+                          title="Supprimer"
+                          onClick={() => {
+                            st.removeIntervention(i.id);
+                            toast.success("Intervention supprimée");
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Panel>
+      )}
 
-
-        <Panel
-          title="Référentiel des pièces"
-          subtitle="Activez (1) ou désactivez (0) les documents requis"
-        >
-          <div className="grid gap-3 sm:grid-cols-2">
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="glass">
+          <DialogHeader>
+            <DialogTitle>
+              {form.id ? "Modifier l'intervention" : "Nouvelle intervention"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
             <label className="text-xs text-muted-foreground">
-              Organisme
+              Nom de l'intervention
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Ex : Cholécystite"
+                className="mt-1"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Spécialité
               <select
-                value={st.selOrg}
-                onChange={(e) => st.setSel({ selOrg: e.target.value })}
+                value={form.specialite}
+                onChange={(e) => setForm((f) => ({ ...f, specialite: e.target.value }))}
                 className="glass-soft mt-1 h-10 w-full rounded-xl px-3 text-sm text-foreground outline-none"
               >
-                {ORGANISMES.map((o) => (
-                  <option key={o.id} value={o.id} className="bg-popover">
-                    {o.label}
+                {SPECIALITES.map((s) => (
+                  <option key={s} value={s} className="bg-popover">
+                    {s}
                   </option>
                 ))}
               </select>
             </label>
             <div className="text-xs text-muted-foreground">
-              Mode
+              Mode par défaut
               <div className="mt-1">
                 <Segmented
-                  value={st.selMode}
-                  onChange={(v) => st.setSel({ selMode: v as Mode })}
+                  value={form.defaultMode}
+                  onChange={(v) => setForm((f) => ({ ...f, defaultMode: v as Mode }))}
                   options={MODES.map((m) => ({ value: m.id, label: m.label }))}
                 />
               </div>
             </div>
           </div>
-
-          <div className="mt-4 flex max-h-[320px] flex-col gap-2 overflow-y-auto pr-1">
-            {entries.map((e) => (
-              <div
-                key={e.pieceId}
-                className="glass-soft flex items-center justify-between gap-3 rounded-xl px-3 py-2"
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Switch
-                    checked={e.active}
-                    onCheckedChange={() => st.togglePiece(e.pieceId)}
-                  />
-                  <span
-                    className={`truncate text-sm ${e.active ? "text-foreground" : "text-muted-foreground"}`}
-                  >
-                    {pieceLabel[e.pieceId] ?? e.pieceId}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded-md px-2 py-0.5 font-mono text-xs ${
-                      e.active
-                        ? "bg-success/15 text-success"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {e.active ? 1 : 0}
-                  </span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-8 text-destructive hover:bg-destructive/15"
-                    onClick={() => {
-                      st.removeFromReferentiel(e.pieceId);
-                      toast.success("Document supprimé du référentiel");
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <Input
-              value={customDoc}
-              onChange={(e) => setCustomDoc(e.target.value)}
-              placeholder="Document personnalisé…"
-              className="glass-soft h-10 w-[220px] rounded-xl border-0 text-sm"
-            />
-            <Button
-              variant="secondary"
-              className="rounded-xl"
-              onClick={() => {
-                const label = customDoc.trim();
-                if (label) {
-                  st.createPiece(label);
-                  setCustomDoc("");
-                  toast.success("Document ajouté au catalogue");
-                } else {
-                  setDocOpen(true);
-                }
-              }}
-            >
-              <Plus className="size-4" /> Ajouter au catalogue
+          <DialogFooter className="sm:justify-center">
+            <Button className="rounded-xl" onClick={submit}>
+              {form.id ? "Enregistrer" : "Créer l'intervention"}
             </Button>
-          </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
-        </Panel>
-      </div>
+function Referentiel({ interventionId }: { interventionId: string }) {
+  const st = useErp();
+  const entries = useErp((s) => s.entries)(interventionId, st.selOrg, st.selMode);
+  const dirty = useErp((s) => s.isDirty)(interventionId, st.selOrg, st.selMode);
+  const intervention = st.interventions.find((i) => i.id === interventionId);
+  const [newDoc, setNewDoc] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
 
+  const pieceLabel = useMemo(
+    () => Object.fromEntries(st.pieces.map((p) => [p.id, p.label])),
+    [st.pieces],
+  );
+
+  return (
+    <div className="mx-auto w-full max-w-3xl">
       <Panel
-        title="Ordre strict"
-        subtitle={`Pièces actives — ${st.profils.find((p) => p.id === st.selProfil)?.name ?? "—"} · ${
-          ORGANISMES.find((o) => o.id === st.selOrg)?.label
-        } · ${st.selMode === "PEC" ? "PEC" : "Expédition"}`}
-        className="min-h-[620px]"
+        title={intervention?.name ?? "Intervention"}
+        subtitle={`${intervention?.code ?? ""} · ${intervention?.specialite ?? ""} — référentiel des pièces`}
+        action={
+          <Segmented
+            value={st.selMode}
+            onChange={(v) => st.setSel({ selMode: v as Mode })}
+            options={MODES.map((m) => ({ value: m.id, label: m.label }))}
+          />
+        }
       >
-        <div className="flex flex-col gap-2">
-          {actives.length === 0 && (
+        <div className="flex flex-wrap gap-2">
+          {ORGANISMES.map((o) => (
+            <button
+              key={o.id}
+              onClick={() => st.setSel({ selOrg: o.id })}
+              className={cn(
+                "rounded-full px-4 py-1.5 text-xs font-medium transition-all",
+                st.selOrg === o.id
+                  ? "glow-ring bg-primary text-primary-foreground"
+                  : "glass-soft text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2">
+          {entries.length === 0 && (
             <p className="py-10 text-center text-sm text-muted-foreground">
-              Aucune pièce active pour cette combinaison.
+              Aucune pièce pour cette combinaison.
             </p>
           )}
-          {actives.map((e, i) => (
+          {entries.map((e, i) => (
             <div
               key={e.pieceId}
               draggable
@@ -252,17 +330,24 @@ export function Parametrage() {
                 if (dragId) st.reorderActive(dragId, e.pieceId);
                 setDragId(null);
               }}
-              className={`glass flex items-center gap-3 rounded-xl px-3 py-3 transition-all ${
-                dragId === e.pieceId ? "opacity-50" : ""
-              }`}
+              className={cn(
+                "glass-soft flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all",
+                dragId === e.pieceId && "opacity-50",
+              )}
             >
               <GripVertical className="size-4 cursor-grab text-muted-foreground" />
-              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/25 text-xs font-semibold text-accent">
+              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/20 text-xs font-semibold text-accent">
                 {i + 1}
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm">
+              <span
+                className={cn(
+                  "min-w-0 flex-1 truncate text-sm",
+                  !e.active && "text-muted-foreground line-through",
+                )}
+              >
                 {pieceLabel[e.pieceId] ?? e.pieceId}
               </span>
+              <Switch checked={e.active} onCheckedChange={() => st.togglePiece(e.pieceId)} />
               <div className="flex items-center gap-1">
                 <Button
                   size="icon"
@@ -277,7 +362,7 @@ export function Parametrage() {
                   size="icon"
                   variant="ghost"
                   className="size-8"
-                  disabled={i === actives.length - 1}
+                  disabled={i === entries.length - 1}
                   onClick={() => st.moveActive(e.pieceId, 1)}
                 >
                   <ArrowDown className="size-4" />
@@ -286,7 +371,7 @@ export function Parametrage() {
                   size="icon"
                   variant="ghost"
                   className="size-8 text-destructive hover:bg-destructive/15"
-                  onClick={() => st.removeActive(e.pieceId)}
+                  onClick={() => st.removeFromReferentiel(e.pieceId)}
                 >
                   <Trash2 className="size-4" />
                 </Button>
@@ -295,94 +380,42 @@ export function Parametrage() {
           ))}
         </div>
 
-        <div className="mt-6 flex items-center justify-center gap-3">
+        <div className="mt-4 flex items-center gap-2">
+          <Input
+            value={newDoc}
+            onChange={(e) => setNewDoc(e.target.value)}
+            placeholder="Ajouter un document supplémentaire…"
+            className="glass-soft h-10 flex-1 rounded-xl border-0 text-sm"
+          />
           <Button
-            className="rounded-xl px-6"
+            variant="secondary"
+            className="rounded-xl"
             onClick={() => {
-              st.saveOrder();
-              toast.success("Ordre enregistré et synchronisé avec les Dossiers d'Intervention");
+              const label = newDoc.trim();
+              if (!label) return;
+              st.createPiece(label);
+              setNewDoc("");
+              toast.success("Document ajouté");
             }}
           >
-            <Save className="size-4" /> Enregistrer l'ordre des pièces
+            <Plus className="size-4" /> Ajouter
           </Button>
         </div>
+
+        {dirty && (
+          <div className="mt-6 flex items-center justify-center">
+            <Button
+              className="rounded-xl px-8"
+              onClick={() => {
+                st.saveOrder();
+                toast.success("Référentiel enregistré et synchronisé");
+              }}
+            >
+              <Save className="size-4" /> Enregistrer
+            </Button>
+          </div>
+        )}
       </Panel>
-      </div>
-
-
-
-      <Dialog open={profilOpen} onOpenChange={setProfilOpen}>
-        <DialogContent className="glass">
-          <DialogHeader>
-            <DialogTitle>Nouveau profil d'intervention</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={newProfil}
-            onChange={(e) => setNewProfil(e.target.value)}
-            placeholder="Ex : Hernie inguinale"
-          />
-          <DialogFooter className="sm:justify-center">
-            <Button
-              onClick={() => {
-                if (!newProfil.trim()) return;
-                st.addProfil(newProfil.trim());
-                setNewProfil("");
-                setProfilOpen(false);
-                toast.success("Profil créé");
-              }}
-            >
-              Créer le profil
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={docOpen} onOpenChange={setDocOpen}>
-        <DialogContent className="glass">
-          <DialogHeader>
-            <DialogTitle>Ajouter un document type</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-56 space-y-2 overflow-y-auto">
-            {available.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Tous les documents du catalogue sont déjà présents.
-              </p>
-            )}
-            {available.map((p) => (
-              <button
-                key={p.id}
-                className="glass-soft w-full rounded-xl px-3 py-2 text-left text-sm hover:text-accent"
-                onClick={() => {
-                  st.addPieceToConfig(p.id);
-                  setDocOpen(false);
-                  toast.success("Document ajouté");
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              value={customDoc}
-              onChange={(e) => setCustomDoc(e.target.value)}
-              placeholder="Document personnalisé…"
-            />
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (!customDoc.trim()) return;
-                st.createPiece(customDoc.trim());
-                setCustomDoc("");
-                setDocOpen(false);
-                toast.success("Document créé");
-              }}
-            >
-              Créer
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
