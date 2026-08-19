@@ -202,11 +202,31 @@ export function Parametrage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <Button variant="secondary" className="rounded-xl" onClick={() => setDocOpen(true)}>
-              <Plus className="size-4" /> Ajouter un document type
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Input
+              value={customDoc}
+              onChange={(e) => setCustomDoc(e.target.value)}
+              placeholder="Document personnalisé…"
+              className="glass-soft h-10 w-[220px] rounded-xl border-0 text-sm"
+            />
+            <Button
+              variant="secondary"
+              className="rounded-xl"
+              onClick={() => {
+                const label = customDoc.trim();
+                if (label) {
+                  st.createPiece(label);
+                  setCustomDoc("");
+                  toast.success("Document ajouté au catalogue");
+                } else {
+                  setDocOpen(true);
+                }
+              }}
+            >
+              <Plus className="size-4" /> Ajouter au catalogue
             </Button>
           </div>
+
         </Panel>
       </div>
 
