@@ -388,30 +388,60 @@ function Wizard({ onExit }: { onExit: () => void }) {
 
   const runAudit = async () => {
     setRunning(true);
-    setLog([]);
-    const lines = [
-      "Initialisation du moteur d'audit IA…",
-      `Lecture de ${st.scans.length} page(s) importée(s)`,
-      "OCR : extraction du texte et des identifiants…",
-      "Redressement / rotation automatique des documents…",
-      "Vérification des anomalies (flou, coupure, doublon)…",
-      "Détection de conformité par rapport au référentiel…",
+    const plan: { label: string; detail: string; final: AuditStatus }[] = [
+      {
+        label: "Initialisation du moteur d'audit IA",
+        detail: "Chargement des modèles de reconnaissance documentaire",
+        final: "success",
+      },
+      {
+        label: "Lecture des pages importées",
+        detail: `${st.scans.length} page(s) analysée(s)`,
+        final: st.scans.length > 0 ? "success" : "warning",
+      },
+      {
+        label: "OCR — extraction du texte et des identifiants",
+        detail: "Nom du patient, CIN, numéro d'immatriculation",
+        final: "success",
+      },
+      {
+        label: "Redressement et rotation automatique",
+        detail: "Orientation normalisée (demande de PEC : 270°)",
+        final: "success",
+      },
+      {
+        label: "Vérification des anomalies de contenu",
+        detail:
+          anomalies.length === 0
+            ? "Aucune anomalie détectée"
+            : `${anomalies.length} anomalie(s) bloquante(s) détectée(s)`,
+        final: anomalies.length === 0 ? "success" : "error",
+      },
+      {
+        label: "Conformité au référentiel de l'organisme",
+        detail:
+          missing.length === 0
+            ? `${required.length} pièce(s) requises présentes`
+            : `${missing.length} pièce(s) manquante(s)`,
+        final: missing.length === 0 ? "success" : "warning",
+      },
     ];
-    for (const l of lines) {
-      await new Promise((r) => setTimeout(r, 420));
-      setLog((p) => [...p, l]);
+
+    setLog(plan.map((p, i) => ({ id: i, label: p.label, detail: p.detail, status: "pending" })));
+
+    for (let i = 0; i < plan.length; i++) {
+      setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: "running" } : s)));
+      await new Promise((r) => setTimeout(r, 600));
+      setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: plan[i]!.final } : s)));
     }
+
     st.straightenAll();
-    await new Promise((r) => setTimeout(r, 300));
-    setLog((p) => [
-      ...p,
-      `Résultat : ${missing.length} pièce(s) manquante(s), ${anomalies.length} anomalie(s).`,
-    ]);
     st.setAuditRan(true);
     setRunning(false);
     if (missing.length === 0 && anomalies.length === 0) toast.success("Dossier conforme");
     else toast.warning("Points bloquants détectés");
   };
+
 
   const pdfName = `${st.dosMode === "PEC" ? "PEC" : "EXP"}_${st.dosOrg}_Ouassim-BEN-MASSAOUD_CLINI-01.pdf`;
 
