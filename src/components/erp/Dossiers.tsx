@@ -51,7 +51,10 @@ export function Dossiers() {
   const [mode, setMode] = useState<"list" | "wizard">("list");
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<DossierRecord | null>(null);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<DossierRecord | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   const names = useMemo(
     () => Object.fromEntries(st.interventions.map((i) => [i.id, i.name])),
@@ -63,6 +66,33 @@ export function Dossiers() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pages);
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const orgLabel = (id: string) => ORGANISMES.find((o) => o.id === id)?.label ?? id;
+
+  // Génère le PDF du dossier sélectionné pour le visualiseur
+  useEffect(() => {
+    let revoked: string | null = null;
+    if (detail) {
+      dossierPdfUrl(detail, names[detail.interventionId] ?? "—", orgLabel(detail.org)).then((u) => {
+        revoked = u;
+        setViewerUrl(u);
+      });
+    } else setViewerUrl(null);
+    return () => {
+      if (revoked) URL.revokeObjectURL(revoked);
+    };
+  }, [detail]);
+
+  const downloadDossier = async (d: DossierRecord) => {
+    const doc = await buildDossierPdf(d, names[d.interventionId] ?? "—", orgLabel(d.org));
+    doc.save(dossierFileName(d));
+    toast.success(`Téléchargement : ${dossierFileName(d)}`);
+  };
+
 
   if (mode === "wizard") return <Wizard onExit={() => setMode("list")} />;
 
