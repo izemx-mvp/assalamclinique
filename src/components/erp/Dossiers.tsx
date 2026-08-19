@@ -636,70 +636,69 @@ function Wizard({ onExit }: { onExit: () => void }) {
           </Panel>
 
           <div className="flex flex-col gap-5">
-            <Panel title="Résultats du contrôle">
-              <div className="flex flex-col gap-2">
-                {st.auditRan && missing.length === 0 && anomalies.length === 0 && (
-                  <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
-                    <CheckCircle2 className="size-4" /> Dossier conforme — aucune anomalie détectée.
-                  </p>
-                )}
-                {missing.map((id) => (
-                  <div
-                    key={id}
-                    className="glass-soft flex flex-wrap items-center gap-3 rounded-xl px-3 py-3"
-                  >
-                    <AlertTriangle className="size-4 shrink-0 text-destructive" />
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      Manquant : {labels[id] ?? id}
-                    </span>
-                    <Button
-                      size="sm"
-                      className="rounded-lg"
-                      onClick={() => {
-                        missingTarget.current = id;
-                        inputRef.current?.click();
-                      }}
+            {st.auditRan && (
+              <Panel title="Résultats du contrôle">
+                <div className="flex flex-col gap-2">
+                  {missing.length === 0 && anomalies.length === 0 && (
+                    <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
+                      <CheckCircle2 className="size-4" /> Dossier conforme — aucune anomalie
+                      détectée.
+                    </p>
+                  )}
+                  {missing.map((id) => (
+                    <div
+                      key={id}
+                      className="glass-soft flex flex-wrap items-center gap-3 rounded-xl px-3 py-3"
                     >
-                      <Upload className="size-3.5" /> Importer le document
-                    </Button>
-                  </div>
-                ))}
-                {anomalies.map((s) => (
-                  <div
-                    key={s.id}
-                    className="glass-soft flex flex-wrap items-center gap-3 rounded-xl px-3 py-3"
-                  >
-                    <AlertTriangle className="size-4 shrink-0 text-destructive" />
-                    <span className="min-w-0 flex-1 truncate text-sm">
-                      Anomalie : {s.fileName}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        replaceTarget.current = s.id;
-                        replaceRef.current?.click();
-                      }}
+                      <AlertTriangle className="size-4 shrink-0 text-destructive" />
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        Manquant : {labels[id] ?? id}
+                      </span>
+                      <Button
+                        size="sm"
+                        className="rounded-lg"
+                        onClick={() => {
+                          missingTarget.current = id;
+                          inputRef.current?.click();
+                        }}
+                      >
+                        <Upload className="size-3.5" /> Importer le document
+                      </Button>
+                    </div>
+                  ))}
+                  {anomalies.map((s) => (
+                    <div
+                      key={s.id}
+                      className="flex flex-wrap items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-3"
                     >
-                      <RefreshCcw className="size-3.5" /> Remplacer le fichier
-                    </Button>
-                  </div>
-                ))}
-                {(missing.length > 0 || anomalies.length > 0) && (
-                  <div className="mt-2 flex justify-center">
-                    <Button variant="secondary" className="rounded-xl" onClick={runAudit}>
-                      <RefreshCcw className="size-4" /> Relancer le contrôle
-                    </Button>
-                  </div>
-                )}
-                {!st.auditRan && missing.length === 0 && anomalies.length === 0 && (
-                  <p className="py-6 text-center text-sm text-muted-foreground">
-                    Lancez le contrôle IA pour afficher les résultats.
-                  </p>
-                )}
-              </div>
-            </Panel>
+                      <AlertTriangle className="size-4 shrink-0 text-destructive" />
+                      <span className="min-w-0 flex-1 text-sm text-destructive">
+                        Anomalie : Informations erronées (nom du patient non valide ou non correct
+                        dans le document {s.fileName})
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="rounded-lg"
+                        onClick={() => {
+                          replaceTarget.current = s.id;
+                          replaceRef.current?.click();
+                        }}
+                      >
+                        <RefreshCcw className="size-3.5" /> Remplacer le fichier
+                      </Button>
+                    </div>
+                  ))}
+                  {(missing.length > 0 || anomalies.length > 0) && (
+                    <div className="mt-2 flex justify-center">
+                      <Button variant="secondary" className="rounded-xl" onClick={runAudit}>
+                        <RefreshCcw className="size-4" /> Relancer le contrôle
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Panel>
+            )}
 
             <div className="flex justify-between">
               <Button variant="secondary" className="rounded-xl" onClick={() => setStep(1)}>
