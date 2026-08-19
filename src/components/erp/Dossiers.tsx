@@ -302,7 +302,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
   const [step, setStep] = useState(1);
   const [pending, setPending] = useState<Scan | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [log, setLog] = useState<string[]>([]);
+  const [log, setLog] = useState<AuditStep[]>([]);
   const [running, setRunning] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
