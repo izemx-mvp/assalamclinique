@@ -50,6 +50,8 @@ export function Dossiers() {
   const st = useErp();
   const [mode, setMode] = useState<"list" | "wizard">("list");
   const [search, setSearch] = useState("");
+  const [detail, setDetail] = useState<DossierRecord | null>(null);
+  const [toDelete, setToDelete] = useState<DossierRecord | null>(null);
 
   const names = useMemo(
     () => Object.fromEntries(st.interventions.map((i) => [i.id, i.name])),
