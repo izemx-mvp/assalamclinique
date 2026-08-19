@@ -699,15 +699,21 @@ function Wizard({ onExit }: { onExit: () => void }) {
                 {st.auditRan ? "Relancer le contrôle" : "Lancer le contrôle IA"}
               </Button>
             </div>
-            <div className="glass-soft mt-4 h-[280px] overflow-y-auto rounded-2xl p-4 font-mono text-[11px] text-muted-foreground">
-              {log.length === 0 && <p>En attente du lancement du contrôle…</p>}
-              {log.map((l, i) => (
-                <p key={i} className="py-0.5">
-                  <span className="text-accent">›</span> {l}
+            <div className="mt-5">
+              {log.length === 0 ? (
+                <p className="glass-soft rounded-2xl px-4 py-10 text-center text-sm text-muted-foreground">
+                  En attente du lancement du contrôle IA…
                 </p>
-              ))}
-              {running && <p className="animate-pulse py-0.5 text-accent">› traitement…</p>}
+              ) : (
+                <ol className="relative flex flex-col gap-3 pl-6">
+                  <span className="absolute top-2 bottom-2 left-2 w-px bg-border" />
+                  {log.map((s, i) => (
+                    <AuditStepCard key={s.id} step={s} index={i} />
+                  ))}
+                </ol>
+              )}
             </div>
+
           </Panel>
 
           <div className="flex flex-col gap-5">
