@@ -27,8 +27,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MODES, ORGANISMES, type Mode } from "@/lib/erp/catalog";
-import { detectFromName, hasAnomaly } from "@/lib/erp/detect";
-import { useErp, type Scan } from "@/store/erp-store";
+import { detectFromName, hasAnomaly, isCarteMutuelleFile } from "@/lib/erp/detect";
+import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
@@ -177,6 +177,65 @@ export function Dossiers() {
           </table>
         </div>
       </Panel>
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="glass max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Détail du dossier {detail?.num}</DialogTitle>
+          </DialogHeader>
+          {detail && (
+            <div className="flex flex-col gap-2 text-sm">
+              {[
+                ["Patient", detail.patient],
+                ["Intervention", names[detail.interventionId] ?? "—"],
+                ["Organisme", ORGANISMES.find((o) => o.id === detail.org)?.label ?? detail.org],
+                ["Mode", detail.mode === "PEC" ? "PEC" : "Expédition"],
+                ["Date de création", detail.createdAt],
+                ["Créé par", detail.createdBy],
+                ["Statut", detail.statut],
+                ["Pages compilées", `${detail.pages} page(s)`],
+              ].map(([k, v]) => (
+                <div
+                  key={k}
+                  className="glass-soft flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+                >
+                  <span className="text-xs text-muted-foreground">{k}</span>
+                  <span className="truncate font-medium">{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <DialogContent className="glass max-w-md">
+          <DialogHeader>
+            <DialogTitle>Supprimer le dossier</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Confirmez-vous la suppression définitive du dossier {toDelete?.num} —{" "}
+            {toDelete?.patient} ?
+          </p>
+          <DialogFooter className="sm:justify-center">
+            <Button variant="secondary" className="rounded-xl" onClick={() => setToDelete(null)}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-xl"
+              onClick={() => {
+                if (toDelete) st.removeDossier(toDelete.id);
+                setToDelete(null);
+                toast.success("Dossier supprimé");
+              }}
+            >
+              <Trash2 className="size-4" /> Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
