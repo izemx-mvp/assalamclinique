@@ -56,3 +56,74 @@ export function Segmented({
     </div>
   );
 }
+
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  onPage,
+  onPageSize,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPage: (p: number) => void;
+  onPageSize: (s: number) => void;
+}) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const to = Math.min(total, page * pageSize);
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <span>
+          {from}–{to} sur {total}
+        </span>
+        <select
+          value={pageSize}
+          onChange={(e) => {
+            onPageSize(Number(e.target.value));
+            onPage(1);
+          }}
+          className="glass-soft h-8 rounded-lg px-2 text-xs outline-none"
+        >
+          {[5, 10, 20].map((n) => (
+            <option key={n} value={n} className="bg-popover">
+              {n} / page
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPage(Math.max(1, page - 1))}
+          disabled={page <= 1}
+          className="glass-soft rounded-lg px-3 py-1.5 disabled:opacity-40"
+        >
+          Précédent
+        </button>
+        {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => onPage(p)}
+            className={cn(
+              "min-w-8 rounded-lg px-2.5 py-1.5 transition-all",
+              p === page
+                ? "bg-primary text-primary-foreground"
+                : "glass-soft text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {p}
+          </button>
+        ))}
+        <button
+          onClick={() => onPage(Math.min(pages, page + 1))}
+          disabled={page >= pages}
+          className="glass-soft rounded-lg px-3 py-1.5 disabled:opacity-40"
+        >
+          Suivant
+        </button>
+      </div>
+    </div>
+  );
+}

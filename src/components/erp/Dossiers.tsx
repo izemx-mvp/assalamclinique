@@ -3,7 +3,10 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
+  Circle,
   Download,
+  Loader2,
+  XCircle,
   Eye,
   FileText,
   Plus,
@@ -28,8 +31,9 @@ import {
 } from "@/components/ui/dialog";
 import { MODES, ORGANISMES, type Mode } from "@/lib/erp/catalog";
 import { detectFromName, hasAnomaly, isCarteMutuelleFile } from "@/lib/erp/detect";
+import { buildDossierPdf, dossierFileName, dossierPdfUrl } from "@/lib/erp/dossier-pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
-import { Panel, Segmented } from "./ui-bits";
+import { Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
 const PATIENT = {
@@ -46,12 +50,74 @@ const STEPS = [
   { id: 3, label: "Aperçu & Transmission" },
 ];
 
+/* ---------------------- Stepper vertical d'audit IA ---------------------- */
+
+type AuditStatus = "pending" | "running" | "success" | "warning" | "error";
+type AuditStep = { id: number; label: string; detail: string; status: AuditStatus };
+
+const AUDIT_STYLES: Record<AuditStatus, { box: string; badge: string; label: string }> = {
+  success: {
+    box: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    label: "Validé",
+  },
+  running: {
+    box: "bg-sky-500/10 text-sky-400 border-sky-500/30",
+    badge: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    label: "En cours",
+  },
+  warning: {
+    box: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    label: "Avertissement",
+  },
+  error: {
+    box: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+    badge: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    label: "Bloquant",
+  },
+  pending: {
+    box: "bg-slate-800/40 text-slate-400 border-slate-700/50",
+    badge: "bg-slate-800/60 text-slate-400 border-slate-700/50",
+    label: "En attente",
+  },
+};
+
+function AuditStepIcon({ status }: { status: AuditStatus }) {
+  if (status === "running") return <Loader2 className="size-4 animate-spin" />;
+  if (status === "success") return <CheckCircle2 className="size-4" />;
+  if (status === "warning") return <AlertTriangle className="size-4" />;
+  if (status === "error") return <XCircle className="size-4" />;
+  return <Circle className="size-4" />;
+}
+
+function AuditStepCard({ step, index }: { step: AuditStep; index: number }) {
+  const s = AUDIT_STYLES[step.status];
+  return (
+    <li
+      className={cn("animate-fade-in rounded-xl border px-4 py-3 transition-all", s.box)}
+      style={{ animationDelay: `${index * 60}ms`, animationFillMode: "backwards" }}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <AuditStepIcon status={step.status} />
+        <p className="min-w-0 flex-1 text-sm font-medium text-foreground">{step.label}</p>
+        <span className={cn("rounded-md border px-2 py-0.5 text-[10px]", s.badge)}>{s.label}</span>
+      </div>
+      <p className="mt-1 pl-7 text-[11px] text-muted-foreground">{step.detail}</p>
+    </li>
+  );
+}
+
+
 export function Dossiers() {
   const st = useErp();
   const [mode, setMode] = useState<"list" | "wizard">("list");
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<DossierRecord | null>(null);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
   const [toDelete, setToDelete] = useState<DossierRecord | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   const names = useMemo(
     () => Object.fromEntries(st.interventions.map((i) => [i.id, i.name])),
@@ -63,6 +129,33 @@ export function Dossiers() {
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pages);
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const orgLabel = (id: string) => ORGANISMES.find((o) => o.id === id)?.label ?? id;
+
+  // Génère le PDF du dossier sélectionné pour le visualiseur
+  useEffect(() => {
+    let revoked: string | null = null;
+    if (detail) {
+      dossierPdfUrl(detail, names[detail.interventionId] ?? "—", orgLabel(detail.org)).then((u) => {
+        revoked = u;
+        setViewerUrl(u);
+      });
+    } else setViewerUrl(null);
+    return () => {
+      if (revoked) URL.revokeObjectURL(revoked);
+    };
+  }, [detail]);
+
+  const downloadDossier = async (d: DossierRecord) => {
+    const doc = await buildDossierPdf(d, names[d.interventionId] ?? "—", orgLabel(d.org));
+    doc.save(dossierFileName(d));
+    toast.success(`Téléchargement : ${dossierFileName(d)}`);
+  };
+
 
   if (mode === "wizard") return <Wizard onExit={() => setMode("list")} />;
 
@@ -114,20 +207,18 @@ export function Dossiers() {
                 <th className="px-3 pb-1 font-medium">Date de création</th>
                 <th className="px-3 pb-1 font-medium">Créé par</th>
                 <th className="px-3 pb-1 font-medium">Statut</th>
-                <th className="px-3 pb-1 text-right font-medium">Aperçu</th>
+                <th className="px-3 pb-1 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((d) => (
+              {paged.map((d) => (
                 <tr key={d.id} className="glass-soft">
                   <td className="rounded-l-xl px-3 py-3 font-mono text-xs text-accent">{d.num}</td>
                   <td className="px-3 py-3 font-medium">{d.patient}</td>
                   <td className="px-3 py-3 text-muted-foreground">
                     {names[d.interventionId] ?? "—"}
                   </td>
-                  <td className="px-3 py-3 text-muted-foreground">
-                    {ORGANISMES.find((o) => o.id === d.org)?.label ?? d.org}
-                  </td>
+                  <td className="px-3 py-3 text-muted-foreground">{orgLabel(d.org)}</td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdAt}</td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdBy}</td>
                   <td className="px-3 py-3">
@@ -148,10 +239,19 @@ export function Dossiers() {
                         size="icon"
                         variant="ghost"
                         className="size-8 hover:text-accent"
-                        title="Consulter le dossier"
+                        title="Aperçu du dossier PDF"
                         onClick={() => setDetail(d)}
                       >
                         <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 hover:text-accent"
+                        title="Télécharger le PDF"
+                        onClick={() => downloadDossier(d)}
+                      >
+                        <Download className="size-4" />
                       </Button>
                       <Button
                         size="icon"
@@ -176,38 +276,48 @@ export function Dossiers() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={safePage}
+          pageSize={pageSize}
+          total={filtered.length}
+          onPage={setPage}
+          onPageSize={setPageSize}
+        />
       </Panel>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="glass max-w-lg">
+        <DialogContent className="glass max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Détail du dossier {detail?.num}</DialogTitle>
-          </DialogHeader>
-          {detail && (
-            <div className="flex flex-col gap-2 text-sm">
-              {[
-                ["Patient", detail.patient],
-                ["Intervention", names[detail.interventionId] ?? "—"],
-                ["Organisme", ORGANISMES.find((o) => o.id === detail.org)?.label ?? detail.org],
-                ["Mode", detail.mode === "PEC" ? "PEC" : "Expédition"],
-                ["Date de création", detail.createdAt],
-                ["Créé par", detail.createdBy],
-                ["Statut", detail.statut],
-                ["Pages compilées", `${detail.pages} page(s)`],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="glass-soft flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+            <DialogTitle className="flex flex-wrap items-center gap-3">
+              <span>Aperçu du dossier {detail?.num}</span>
+              {detail && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="rounded-lg"
+                  onClick={() => downloadDossier(detail)}
                 >
-                  <span className="text-xs text-muted-foreground">{k}</span>
-                  <span className="truncate font-medium">{v}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <DialogFooter />
+                  <Download className="size-3.5" /> Télécharger
+                </Button>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="glass-soft h-[70vh] overflow-hidden rounded-xl">
+            {viewerUrl ? (
+              <iframe
+                src={viewerUrl}
+                title={`Dossier ${detail?.num}`}
+                className="h-full w-full rounded-xl border-0"
+              />
+            ) : (
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                Compilation du document…
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
+
 
       <Dialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <DialogContent className="glass max-w-md">
@@ -254,7 +364,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
   const [step, setStep] = useState(1);
   const [pending, setPending] = useState<Scan | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [log, setLog] = useState<string[]>([]);
+  const [log, setLog] = useState<AuditStep[]>([]);
   const [running, setRunning] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -340,30 +450,60 @@ function Wizard({ onExit }: { onExit: () => void }) {
 
   const runAudit = async () => {
     setRunning(true);
-    setLog([]);
-    const lines = [
-      "Initialisation du moteur d'audit IA…",
-      `Lecture de ${st.scans.length} page(s) importée(s)`,
-      "OCR : extraction du texte et des identifiants…",
-      "Redressement / rotation automatique des documents…",
-      "Vérification des anomalies (flou, coupure, doublon)…",
-      "Détection de conformité par rapport au référentiel…",
+    const plan: { label: string; detail: string; final: AuditStatus }[] = [
+      {
+        label: "Initialisation du moteur d'audit IA",
+        detail: "Chargement des modèles de reconnaissance documentaire",
+        final: "success",
+      },
+      {
+        label: "Lecture des pages importées",
+        detail: `${st.scans.length} page(s) analysée(s)`,
+        final: st.scans.length > 0 ? "success" : "warning",
+      },
+      {
+        label: "OCR — extraction du texte et des identifiants",
+        detail: "Nom du patient, CIN, numéro d'immatriculation",
+        final: "success",
+      },
+      {
+        label: "Redressement et rotation automatique",
+        detail: "Orientation normalisée (demande de PEC : 270°)",
+        final: "success",
+      },
+      {
+        label: "Vérification des anomalies de contenu",
+        detail:
+          anomalies.length === 0
+            ? "Aucune anomalie détectée"
+            : `${anomalies.length} anomalie(s) bloquante(s) détectée(s)`,
+        final: anomalies.length === 0 ? "success" : "error",
+      },
+      {
+        label: "Conformité au référentiel de l'organisme",
+        detail:
+          missing.length === 0
+            ? `${required.length} pièce(s) requises présentes`
+            : `${missing.length} pièce(s) manquante(s)`,
+        final: missing.length === 0 ? "success" : "warning",
+      },
     ];
-    for (const l of lines) {
-      await new Promise((r) => setTimeout(r, 420));
-      setLog((p) => [...p, l]);
+
+    setLog(plan.map((p, i) => ({ id: i, label: p.label, detail: p.detail, status: "pending" })));
+
+    for (let i = 0; i < plan.length; i++) {
+      setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: "running" } : s)));
+      await new Promise((r) => setTimeout(r, 600));
+      setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: plan[i]!.final } : s)));
     }
+
     st.straightenAll();
-    await new Promise((r) => setTimeout(r, 300));
-    setLog((p) => [
-      ...p,
-      `Résultat : ${missing.length} pièce(s) manquante(s), ${anomalies.length} anomalie(s).`,
-    ]);
     st.setAuditRan(true);
     setRunning(false);
     if (missing.length === 0 && anomalies.length === 0) toast.success("Dossier conforme");
     else toast.warning("Points bloquants détectés");
   };
+
 
   const pdfName = `${st.dosMode === "PEC" ? "PEC" : "EXP"}_${st.dosOrg}_Ouassim-BEN-MASSAOUD_CLINI-01.pdf`;
 
@@ -394,53 +534,50 @@ function Wizard({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="glass flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
-        <div className="flex items-center gap-3">
-          <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
-            <Stethoscope className="size-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">Nouveau Dossier</p>
-            <p className="text-[11px] text-muted-foreground">
-              Patient : {PATIENT.nom} | CIN : {PATIENT.cin} | Organisme :{" "}
-              {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
-              {st.interventions.find((p) => p.id === st.dosProfil)?.name}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Segmented
-            value={st.dosMode}
-            onChange={(v) => st.setDos({ dosMode: v as Mode })}
-            options={MODES.map((m) => ({ value: m.id, label: m.label }))}
-          />
-          <select
-            value={st.dosProfil}
-            onChange={(e) => st.setDos({ dosProfil: e.target.value })}
-            className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
+      <div className="glass rounded-2xl px-5 py-4">
+        <div className="mb-3 flex justify-end">
+          <Button
+            className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+            onClick={onExit}
           >
-            {st.interventions.map((p) => (
-              <option key={p.id} value={p.id} className="bg-popover">
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={st.dosOrg}
-            onChange={(e) => st.setDos({ dosOrg: e.target.value })}
-            className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
-          >
-            {ORGANISMES.map((o) => (
-              <option key={o.id} value={o.id} className="bg-popover">
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <Button variant="secondary" className="rounded-xl" onClick={onExit}>
             <ArrowLeft className="size-4" /> Retour
           </Button>
         </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
+              <Stethoscope className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Nouveau Dossier</p>
+              <p className="text-[11px] text-muted-foreground">
+                Patient : {PATIENT.nom} | CIN : {PATIENT.cin} | Organisme :{" "}
+                {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
+                {st.interventions.find((p) => p.id === st.dosProfil)?.name}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Segmented
+              value={st.dosMode}
+              onChange={(v) => st.setDos({ dosMode: v as Mode })}
+              options={MODES.map((m) => ({ value: m.id, label: m.label }))}
+            />
+            <select
+              value={st.dosProfil}
+              onChange={(e) => st.setDos({ dosProfil: e.target.value })}
+              className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
+            >
+              {st.interventions.map((p) => (
+                <option key={p.id} value={p.id} className="bg-popover">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
+
 
       {/* Stepper / fil d'Ariane */}
       <div className="glass flex flex-wrap items-center justify-center gap-3 rounded-2xl px-5 py-3">
@@ -624,15 +761,21 @@ function Wizard({ onExit }: { onExit: () => void }) {
                 {st.auditRan ? "Relancer le contrôle" : "Lancer le contrôle IA"}
               </Button>
             </div>
-            <div className="glass-soft mt-4 h-[280px] overflow-y-auto rounded-2xl p-4 font-mono text-[11px] text-muted-foreground">
-              {log.length === 0 && <p>En attente du lancement du contrôle…</p>}
-              {log.map((l, i) => (
-                <p key={i} className="py-0.5">
-                  <span className="text-accent">›</span> {l}
+            <div className="mt-5">
+              {log.length === 0 ? (
+                <p className="glass-soft rounded-2xl px-4 py-10 text-center text-sm text-muted-foreground">
+                  En attente du lancement du contrôle IA…
                 </p>
-              ))}
-              {running && <p className="animate-pulse py-0.5 text-accent">› traitement…</p>}
+              ) : (
+                <ol className="relative flex flex-col gap-3 pl-6">
+                  <span className="absolute top-2 bottom-2 left-2 w-px bg-border" />
+                  {log.map((s, i) => (
+                    <AuditStepCard key={s.id} step={s} index={i} />
+                  ))}
+                </ol>
+              )}
             </div>
+
           </Panel>
 
           <div className="flex flex-col gap-5">
