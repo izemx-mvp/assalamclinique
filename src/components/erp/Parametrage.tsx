@@ -122,11 +122,8 @@ export function Parametrage() {
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <Button onClick={() => setProfilOpen(true)} className="rounded-xl">
-              <Plus className="size-4" /> Nouveau profil d'intervention
-            </Button>
-          </div>
+        </Panel>
+
         </Panel>
 
         <Panel
