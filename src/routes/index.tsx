@@ -1,24 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Toaster } from "@/components/ui/sonner";
+import { Shell } from "@/components/erp/Shell";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "MedFlow ERP — Interventions & Audit IA des dossiers" },
+      {
+        name: "description",
+        content:
+          "ERP médical MedFlow : paramétrage des interventions, ordre strict des pièces, audit IA des dossiers et compilation PDF pour PEC et expédition.",
+      },
+      { property: "og:title", content: "MedFlow ERP — Interventions & Audit IA" },
+      {
+        property: "og:description",
+        content:
+          "Configurez les matrices de pièces par organisme et mode, puis auditez et compilez les dossiers d'intervention.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <>
+      <h1 className="sr-only">MedFlow ERP — Module Interventions</h1>
+      <Shell />
+      <Toaster position="top-right" />
+    </>
   );
 }
