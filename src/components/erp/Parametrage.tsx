@@ -304,6 +304,9 @@ export function Parametrage() {
           </Button>
         </div>
       </Panel>
+      </div>
+
+
 
       <Dialog open={profilOpen} onOpenChange={setProfilOpen}>
         <DialogContent className="glass">
