@@ -76,8 +76,9 @@ export function Parametrage() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <div className="flex flex-col gap-5">
-
+        <Panel
           title="Profils d'intervention"
+
           subtitle="Sélectionnez le profil à configurer"
         >
           <div className="flex max-h-[280px] flex-col gap-2 overflow-y-auto pr-1">
