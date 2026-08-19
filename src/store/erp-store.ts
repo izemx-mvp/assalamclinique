@@ -378,7 +378,14 @@ export const useErp = create<State & Actions>((set, get) => ({
       generated: null,
     })),
   straightenAll: () =>
-    set((st) => ({ scans: st.scans.map((s) => ({ ...s, angle: 0, straightened: true })) })),
+    set((st) => ({
+      scans: st.scans.map((s) => ({
+        ...s,
+        // La demande de PEC conserve sa rotation automatique de 270°
+        angle: s.pieceId === "demande_pec" ? 270 : 0,
+        straightened: true,
+      })),
+    })),
   setAuditRan: (v) => set({ auditRan: v }),
   setGenerated: (v) => set({ generated: v }),
   setTransmitted: (v) => set({ transmitted: v }),
