@@ -124,7 +124,6 @@ export function Parametrage() {
           </div>
         </Panel>
 
-        </Panel>
 
         <Panel
           title="Référentiel des pièces"
