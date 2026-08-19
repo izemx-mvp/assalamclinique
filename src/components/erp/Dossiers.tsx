@@ -144,20 +144,18 @@ export function Dossiers() {
                 <th className="px-3 pb-1 font-medium">Date de création</th>
                 <th className="px-3 pb-1 font-medium">Créé par</th>
                 <th className="px-3 pb-1 font-medium">Statut</th>
-                <th className="px-3 pb-1 text-right font-medium">Aperçu</th>
+                <th className="px-3 pb-1 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((d) => (
+              {paged.map((d) => (
                 <tr key={d.id} className="glass-soft">
                   <td className="rounded-l-xl px-3 py-3 font-mono text-xs text-accent">{d.num}</td>
                   <td className="px-3 py-3 font-medium">{d.patient}</td>
                   <td className="px-3 py-3 text-muted-foreground">
                     {names[d.interventionId] ?? "—"}
                   </td>
-                  <td className="px-3 py-3 text-muted-foreground">
-                    {ORGANISMES.find((o) => o.id === d.org)?.label ?? d.org}
-                  </td>
+                  <td className="px-3 py-3 text-muted-foreground">{orgLabel(d.org)}</td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdAt}</td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdBy}</td>
                   <td className="px-3 py-3">
@@ -178,10 +176,19 @@ export function Dossiers() {
                         size="icon"
                         variant="ghost"
                         className="size-8 hover:text-accent"
-                        title="Consulter le dossier"
+                        title="Aperçu du dossier PDF"
                         onClick={() => setDetail(d)}
                       >
                         <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 hover:text-accent"
+                        title="Télécharger le PDF"
+                        onClick={() => downloadDossier(d)}
+                      >
+                        <Download className="size-4" />
                       </Button>
                       <Button
                         size="icon"
@@ -206,38 +213,48 @@ export function Dossiers() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={safePage}
+          pageSize={pageSize}
+          total={filtered.length}
+          onPage={setPage}
+          onPageSize={setPageSize}
+        />
       </Panel>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="glass max-w-lg">
+        <DialogContent className="glass max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Détail du dossier {detail?.num}</DialogTitle>
-          </DialogHeader>
-          {detail && (
-            <div className="flex flex-col gap-2 text-sm">
-              {[
-                ["Patient", detail.patient],
-                ["Intervention", names[detail.interventionId] ?? "—"],
-                ["Organisme", ORGANISMES.find((o) => o.id === detail.org)?.label ?? detail.org],
-                ["Mode", detail.mode === "PEC" ? "PEC" : "Expédition"],
-                ["Date de création", detail.createdAt],
-                ["Créé par", detail.createdBy],
-                ["Statut", detail.statut],
-                ["Pages compilées", `${detail.pages} page(s)`],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="glass-soft flex items-center justify-between gap-3 rounded-xl px-3 py-2"
+            <DialogTitle className="flex flex-wrap items-center gap-3">
+              <span>Aperçu du dossier {detail?.num}</span>
+              {detail && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="rounded-lg"
+                  onClick={() => downloadDossier(detail)}
                 >
-                  <span className="text-xs text-muted-foreground">{k}</span>
-                  <span className="truncate font-medium">{v}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <DialogFooter />
+                  <Download className="size-3.5" /> Télécharger
+                </Button>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="glass-soft h-[70vh] overflow-hidden rounded-xl">
+            {viewerUrl ? (
+              <iframe
+                src={viewerUrl}
+                title={`Dossier ${detail?.num}`}
+                className="h-full w-full rounded-xl border-0"
+              />
+            ) : (
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                Compilation du document…
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
+
 
       <Dialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <DialogContent className="glass max-w-md">
