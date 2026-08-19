@@ -24,7 +24,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { MODES, ORGANISMES, type Mode } from "@/lib/erp/catalog";
 import { useErp, type Intervention } from "@/store/erp-store";
-import { Panel, Segmented } from "./ui-bits";
+import { Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
 const SPECIALITES = [
@@ -57,6 +57,15 @@ export function Parametrage() {
   const [detail, setDetail] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  const pages = Math.max(1, Math.ceil(st.interventions.length / pageSize));
+  const safePage = Math.min(page, pages);
+  const pagedInterventions = st.interventions.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -135,7 +144,7 @@ export function Parametrage() {
                 </tr>
               </thead>
               <tbody>
-                {st.interventions.map((i) => (
+                {pagedInterventions.map((i) => (
                   <tr
                     key={i.id}
                     onClick={() => {
@@ -215,6 +224,13 @@ export function Parametrage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={safePage}
+            pageSize={pageSize}
+            total={st.interventions.length}
+            onPage={setPage}
+            onPageSize={setPageSize}
+          />
         </Panel>
       )}
 
