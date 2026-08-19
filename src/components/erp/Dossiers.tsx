@@ -202,8 +202,15 @@ export function Dossiers() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="flex flex-col gap-5">
-          <Panel title="Checklist dynamique" subtitle="Pièces attendues issues du paramétrage">
-            <div className="flex flex-col gap-2">
+          <Panel
+            title={`Checklist des exigences (${required.length})`}
+            action={
+              <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                {required.filter((id) => satisfied(id)).length}/{required.length} conformes
+              </span>
+            }
+          >
+            <div className="flex flex-col gap-2.5">
               {required
                 .filter((id) =>
                   (labels[id] ?? id).toLowerCase().includes(search.toLowerCase()),
@@ -213,36 +220,67 @@ export function Dossiers() {
                   return (
                     <div
                       key={id}
-                      className={`glass-soft flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                      className={`glass-soft flex items-center gap-3 rounded-xl px-3 py-3 ${
                         ok ? "border-success/40" : ""
                       }`}
                     >
-                      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-primary/25 text-[11px] text-accent">
+                      <span className="w-4 shrink-0 text-center text-[11px] text-muted-foreground">
                         {i + 1}
                       </span>
-                      <span
-                        className={`min-w-0 flex-1 truncate text-sm ${ok ? "text-success" : "text-muted-foreground"}`}
-                      >
-                        {labels[id] ?? id}
-                      </span>
-                      {id === "cin_assure" && (
-                        <span className="text-[10px] text-muted-foreground">Patient = Assuré</span>
-                      )}
-                      {id === "cin_patient" && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {hasSide("recto") ? "R✓" : "R–"} {hasSide("verso") ? "V✓" : "V–"}
-                        </span>
-                      )}
                       {ok ? (
-                        <CheckCircle2 className="size-4 text-success" />
+                        <CheckCircle2 className="size-4 shrink-0 text-success" />
                       ) : (
-                        <AlertTriangle className="size-4 text-destructive" />
+                        <span className="size-4 shrink-0 rounded-full border border-muted-foreground/50" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-sm ${ok ? "text-success" : "text-foreground"}`}>
+                          {labels[id] ?? id}
+                        </p>
+                        {id === "cin_patient" && (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            Recto {hasSide("recto") ? "✓" : "–"} · Verso{" "}
+                            {hasSide("verso") ? "✓" : "–"}
+                          </p>
+                        )}
+                        {id === "cin_assure" && (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            Patient = Assuré (couvert par la CIN patient)
+                          </p>
+                        )}
+                      </div>
+                      {id === "cin_assure" && (
+                        <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[10px] text-accent">
+                          auto
+                        </span>
                       )}
                     </div>
                   );
                 })}
+              <div className="glass-soft flex items-center gap-2 rounded-xl px-3 py-2">
+                <Input
+                  value={extraDoc}
+                  onChange={(e) => setExtraDoc(e.target.value)}
+                  placeholder="Ajouter un document supplémentaire…"
+                  className="h-8 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+                />
+                <Button
+                  size="icon"
+                  className="size-8 shrink-0 rounded-lg"
+                  onClick={() => {
+                    const label = extraDoc.trim();
+                    if (!label) return;
+                    st.createPiece(label);
+                    st.saveOrder();
+                    setExtraDoc("");
+                    toast.success("Document ajouté à la checklist");
+                  }}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
             </div>
           </Panel>
+
 
           <Panel title="Zone de dépôt des scans">
             <div
