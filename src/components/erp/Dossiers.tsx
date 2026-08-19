@@ -10,6 +10,8 @@ import {
   Search,
   Send,
   Sparkles,
+  Stethoscope,
+
   Trash2,
   Upload,
 } from "lucide-react";
