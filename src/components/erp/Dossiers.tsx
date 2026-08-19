@@ -378,7 +378,7 @@ export function Dossiers() {
         </div>
 
         <div className="flex flex-col gap-5">
-          <Panel title="Aperçu document" subtitle={current?.fileName ?? "Aucun document"}>
+          <Panel title="Aperçu du document">
             <div className="glass-soft grid min-h-[320px] place-items-center overflow-hidden rounded-2xl p-3">
               {current ? (
                 current.mime.startsWith("image/") ? (
@@ -401,9 +401,13 @@ export function Dossiers() {
                   </object>
                 )
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Sélectionnez une pièce dans l'ordre du dossier
-                </p>
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <FileText className="size-14 text-muted-foreground/60" />
+                  <p className="text-sm font-medium">Aucun scan importé</p>
+                  <p className="text-xs text-muted-foreground">
+                    Déposez un PDF ou une image pour lancer l'aperçu réel.
+                  </p>
+                </div>
               )}
             </div>
             <input
@@ -415,7 +419,10 @@ export function Dossiers() {
                 e.target.value = "";
               }}
             />
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <span className="truncate text-[11px] text-muted-foreground">
+                {current?.fileName ?? "—"}
+              </span>
               <Button
                 variant="secondary"
                 className="rounded-xl"
@@ -430,7 +437,15 @@ export function Dossiers() {
             </div>
           </Panel>
 
-          <Panel title="Journal d'audit IA">
+          <Panel
+            title="Journal d'audit IA"
+            action={
+              <span className="text-[11px] text-muted-foreground">
+                {st.auditRan ? "Contrôle effectué" : "Contrôle non lancé"}
+              </span>
+            }
+          >
+
             <div className="flex items-center justify-center gap-3">
               <Button
                 className="rounded-xl"
