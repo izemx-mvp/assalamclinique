@@ -249,16 +249,6 @@ export function Parametrage() {
                 ))}
               </select>
             </label>
-            <div className="text-xs text-muted-foreground">
-              Mode par défaut
-              <div className="mt-1">
-                <Segmented
-                  value={form.defaultMode}
-                  onChange={(v) => setForm((f) => ({ ...f, defaultMode: v as Mode }))}
-                  options={MODES.map((m) => ({ value: m.id, label: m.label }))}
-                />
-              </div>
-            </div>
           </div>
           <DialogFooter className="sm:justify-center">
             <Button className="rounded-xl" onClick={submit}>
@@ -285,7 +275,7 @@ function Referentiel({ interventionId }: { interventionId: string }) {
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="w-full">
       <Panel
         title={intervention?.name ?? "Intervention"}
         subtitle={`${intervention?.code ?? ""} · ${intervention?.specialite ?? ""} — référentiel des pièces`}

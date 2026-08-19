@@ -99,6 +99,7 @@ type Actions = {
   setGenerated: (v: string | null) => void;
   setTransmitted: (v: boolean) => void;
   commitDossier: (statut: DossierRecord["statut"]) => void;
+  removeDossier: (id: string) => void;
 };
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -381,6 +382,8 @@ export const useErp = create<State & Actions>((set, get) => ({
   setAuditRan: (v) => set({ auditRan: v }),
   setGenerated: (v) => set({ generated: v }),
   setTransmitted: (v) => set({ transmitted: v }),
+
+  removeDossier: (id) => set((st) => ({ dossiers: st.dossiers.filter((d) => d.id !== id) })),
 
   commitDossier: (statut) =>
     set((st) => {
