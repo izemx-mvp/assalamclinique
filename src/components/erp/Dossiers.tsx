@@ -47,6 +47,65 @@ const STEPS = [
   { id: 3, label: "Aperçu & Transmission" },
 ];
 
+/* ---------------------- Stepper vertical d'audit IA ---------------------- */
+
+type AuditStatus = "pending" | "running" | "success" | "warning" | "error";
+type AuditStep = { id: number; label: string; detail: string; status: AuditStatus };
+
+const AUDIT_STYLES: Record<AuditStatus, { box: string; badge: string; label: string }> = {
+  success: {
+    box: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    label: "Validé",
+  },
+  running: {
+    box: "bg-sky-500/10 text-sky-400 border-sky-500/30",
+    badge: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    label: "En cours",
+  },
+  warning: {
+    box: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    label: "Avertissement",
+  },
+  error: {
+    box: "bg-rose-500/10 text-rose-400 border-rose-500/30",
+    badge: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    label: "Bloquant",
+  },
+  pending: {
+    box: "bg-slate-800/40 text-slate-400 border-slate-700/50",
+    badge: "bg-slate-800/60 text-slate-400 border-slate-700/50",
+    label: "En attente",
+  },
+};
+
+function AuditStepIcon({ status }: { status: AuditStatus }) {
+  if (status === "running") return <Loader2 className="size-4 animate-spin" />;
+  if (status === "success") return <CheckCircle2 className="size-4" />;
+  if (status === "warning") return <AlertTriangle className="size-4" />;
+  if (status === "error") return <XCircle className="size-4" />;
+  return <Circle className="size-4" />;
+}
+
+function AuditStepCard({ step, index }: { step: AuditStep; index: number }) {
+  const s = AUDIT_STYLES[step.status];
+  return (
+    <li
+      className={cn("animate-fade-in rounded-xl border px-4 py-3 transition-all", s.box)}
+      style={{ animationDelay: `${index * 60}ms`, animationFillMode: "backwards" }}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <AuditStepIcon status={step.status} />
+        <p className="min-w-0 flex-1 text-sm font-medium text-foreground">{step.label}</p>
+        <span className={cn("rounded-md border px-2 py-0.5 text-[10px]", s.badge)}>{s.label}</span>
+      </div>
+      <p className="mt-1 pl-7 text-[11px] text-muted-foreground">{step.detail}</p>
+    </li>
+  );
+}
+
+
 export function Dossiers() {
   const st = useErp();
   const [mode, setMode] = useState<"list" | "wizard">("list");
