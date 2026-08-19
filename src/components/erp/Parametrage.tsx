@@ -6,7 +6,8 @@ import {
   GripVertical,
   Plus,
   Save,
-  Trash2,
+  SlidersHorizontal,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
