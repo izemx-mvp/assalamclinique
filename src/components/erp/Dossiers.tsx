@@ -141,19 +141,26 @@ export function Dossiers() {
                     </span>
                   </td>
                   <td className="rounded-r-xl px-3 py-3 text-right">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-8 hover:text-accent"
-                      title="Consulter le dossier"
-                      onClick={() =>
-                        toast.info(
-                          `${d.num} — ${d.patient} · ${d.pages} page(s) · ${d.mode === "PEC" ? "PEC" : "Expédition"}`,
-                        )
-                      }
-                    >
-                      <Eye className="size-4" />
-                    </Button>
+                    <span className="inline-flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 hover:text-accent"
+                        title="Consulter le dossier"
+                        onClick={() => setDetail(d)}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="size-8 text-destructive hover:bg-destructive/15"
+                        title="Supprimer le dossier"
+                        onClick={() => setToDelete(d)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </span>
                   </td>
                 </tr>
               ))}
