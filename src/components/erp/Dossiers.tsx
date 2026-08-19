@@ -149,8 +149,17 @@ export function Dossiers() {
 
   return (
     <div className="flex flex-col gap-5">
-      <Panel title="Dossiers Interventions / ERP Clinique — Audit IA">
+      <div className="glass rounded-2xl px-5 py-4">
         <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
+            <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
+              <Stethoscope className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Dossiers Interventions</p>
+              <p className="text-[11px] text-muted-foreground">ERP Clinique — Audit IA</p>
+            </div>
+          </div>
           <Segmented
             value={st.dosMode}
             onChange={(v) => st.setDos({ dosMode: v as Mode })}
@@ -167,23 +176,12 @@ export function Dossiers() {
               </option>
             ))}
           </select>
-          <select
-            value={st.dosOrg}
-            onChange={(e) => st.setDos({ dosOrg: e.target.value })}
-            className="glass-soft h-10 rounded-xl px-3 text-sm outline-none"
-          >
-            {ORGANISMES.map((o) => (
-              <option key={o.id} value={o.id} className="bg-popover">
-                {o.label}
-              </option>
-            ))}
-          </select>
           <div className="relative min-w-[220px] flex-1">
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher une pièce, un patient…"
+              placeholder="Rechercher : CIN patient / assuré, nom, N° dossier…"
               className="glass-soft h-10 rounded-xl border-0 pl-9"
             />
           </div>
@@ -196,9 +194,11 @@ export function Dossiers() {
         <p className="mt-3 text-[11px] text-muted-foreground">
           Patient : {PATIENT.nom} | CIN Patient : {PATIENT.cin} | CIN Assuré : {PATIENT.cin} |
           Assuré : {PATIENT.nom} (lui-même) | Organisme :{" "}
-          {ORGANISMES.find((o) => o.id === st.dosOrg)?.label}
+          {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
+          {st.profils.find((p) => p.id === st.dosProfil)?.name}
         </p>
-      </Panel>
+      </div>
+
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div className="flex flex-col gap-5">
