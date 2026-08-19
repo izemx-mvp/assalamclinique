@@ -269,7 +269,13 @@ export function Dossiers() {
                   onClick={() => {
                     const label = extraDoc.trim();
                     if (!label) return;
+                    st.setSel({
+                      selProfil: st.dosProfil,
+                      selOrg: st.dosOrg,
+                      selMode: st.dosMode,
+                    });
                     st.createPiece(label);
+
                     st.saveOrder();
                     setExtraDoc("");
                     toast.success("Document ajouté à la checklist");
