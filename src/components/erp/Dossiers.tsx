@@ -46,7 +46,9 @@ export function Dossiers() {
   );
 
   const [search, setSearch] = useState("");
+  const [extraDoc, setExtraDoc] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+
   const [pending, setPending] = useState<Scan | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const replaceRef = useRef<HTMLInputElement>(null);
