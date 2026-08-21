@@ -42,7 +42,10 @@ export type DossierRecord = {
   createdBy: string;
   statut: "Brouillon" | "Audité" | "Transmis";
   pages: number;
+  /** PDF compilé complet (data URI base64), persisté pour le téléchargement depuis l'historique. */
+  pdfData?: string;
 };
+
 
 type State = {
   // --- Paramétrage ---
