@@ -393,27 +393,34 @@ export const useErp = create<State & Actions>((set, get) => ({
   setGenerated: (v) => set({ generated: v }),
   setTransmitted: (v) => set({ transmitted: v }),
 
-  removeDossier: (id) => set((st) => ({ dossiers: st.dossiers.filter((d) => d.id !== id) })),
+  removeDossier: (id) =>
+    set((st) => {
+      const dossiers = st.dossiers.filter((d) => d.id !== id);
+      persistDossiers(dossiers);
+      return { dossiers };
+    }),
 
-  commitDossier: (statut) =>
+  commitDossier: (statut, pdfData) =>
     set((st) => {
       const num = `DOS-2026-${String(st.dossiers.length + 1).padStart(4, "0")}`;
-      return {
-        dossiers: [
-          ...st.dossiers,
-          {
-            id: uid(),
-            num,
-            patient: "Ouassim BEN MASSAOUD",
-            interventionId: st.dosProfil,
-            org: st.dosOrg,
-            mode: st.dosMode,
-            createdAt: new Date().toLocaleDateString("fr-FR"),
-            createdBy: "Dr. Alami",
-            statut,
-            pages: st.scans.length,
-          },
-        ],
-      };
+      const dossiers: DossierRecord[] = [
+        ...st.dossiers,
+        {
+          id: uid(),
+          num,
+          patient: "Ouassim BEN MASSAOUD",
+          interventionId: st.dosProfil,
+          org: st.dosOrg,
+          mode: st.dosMode,
+          createdAt: new Date().toLocaleDateString("fr-FR"),
+          createdBy: "Dr. Alami",
+          statut,
+          pages: st.scans.length,
+          ...(pdfData ? { pdfData } : {}),
+        },
+      ];
+      persistDossiers(dossiers);
+      return { dossiers };
     }),
 }));
+
