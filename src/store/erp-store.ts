@@ -42,7 +42,10 @@ export type DossierRecord = {
   createdBy: string;
   statut: "Brouillon" | "Audité" | "Transmis";
   pages: number;
+  /** PDF compilé complet (data URI base64), persisté pour le téléchargement depuis l'historique. */
+  pdfData?: string;
 };
+
 
 type State = {
   // --- Paramétrage ---
@@ -98,7 +101,7 @@ type Actions = {
   setAuditRan: (v: boolean) => void;
   setGenerated: (v: string | null) => void;
   setTransmitted: (v: boolean) => void;
-  commitDossier: (statut: DossierRecord["statut"]) => void;
+  commitDossier: (statut: DossierRecord["statut"], pdfData?: string) => void;
   removeDossier: (id: string) => void;
 };
 
@@ -167,6 +170,38 @@ const INITIAL_DOSSIERS: DossierRecord[] = [
   },
 ];
 
+const STORAGE_KEY = "assalam-erp-dossiers";
+
+/** Persistance locale des dossiers (PDF compilé inclus). */
+function persistDossiers(dossiers: DossierRecord[]) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(dossiers));
+  } catch {
+    // quota dépassé : on retente sans les binaires PDF
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(dossiers.map(({ pdfData: _pdf, ...d }) => d)),
+      );
+    } catch {
+      /* ignoré */
+    }
+  }
+}
+
+function loadDossiers(): DossierRecord[] {
+  if (typeof window === "undefined") return INITIAL_DOSSIERS;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return INITIAL_DOSSIERS;
+    const parsed = JSON.parse(raw) as DossierRecord[];
+    return Array.isArray(parsed) && parsed.length ? parsed : INITIAL_DOSSIERS;
+  } catch {
+    return INITIAL_DOSSIERS;
+  }
+}
+
 export const useErp = create<State & Actions>((set, get) => ({
   interventions: INITIAL_INTERVENTIONS,
   pieces: [...PIECES],
@@ -176,7 +211,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   draft: {},
   saved: {},
   dirty: {},
-  dossiers: INITIAL_DOSSIERS,
+  dossiers: loadDossiers(),
   dosProfil: "cholecystite",
   dosMode: "PEC",
   dosOrg: "CNSS",
@@ -390,27 +425,34 @@ export const useErp = create<State & Actions>((set, get) => ({
   setGenerated: (v) => set({ generated: v }),
   setTransmitted: (v) => set({ transmitted: v }),
 
-  removeDossier: (id) => set((st) => ({ dossiers: st.dossiers.filter((d) => d.id !== id) })),
+  removeDossier: (id) =>
+    set((st) => {
+      const dossiers = st.dossiers.filter((d) => d.id !== id);
+      persistDossiers(dossiers);
+      return { dossiers };
+    }),
 
-  commitDossier: (statut) =>
+  commitDossier: (statut, pdfData) =>
     set((st) => {
       const num = `DOS-2026-${String(st.dossiers.length + 1).padStart(4, "0")}`;
-      return {
-        dossiers: [
-          ...st.dossiers,
-          {
-            id: uid(),
-            num,
-            patient: "Ouassim BEN MASSAOUD",
-            interventionId: st.dosProfil,
-            org: st.dosOrg,
-            mode: st.dosMode,
-            createdAt: new Date().toLocaleDateString("fr-FR"),
-            createdBy: "Dr. Alami",
-            statut,
-            pages: st.scans.length,
-          },
-        ],
-      };
+      const dossiers: DossierRecord[] = [
+        ...st.dossiers,
+        {
+          id: uid(),
+          num,
+          patient: "Ouassim BEN MASSAOUD",
+          interventionId: st.dosProfil,
+          org: st.dosOrg,
+          mode: st.dosMode,
+          createdAt: new Date().toLocaleDateString("fr-FR"),
+          createdBy: "Dr. Alami",
+          statut,
+          pages: st.scans.length,
+          ...(pdfData ? { pdfData } : {}),
+        },
+      ];
+      persistDossiers(dossiers);
+      return { dossiers };
     }),
 }));
+
