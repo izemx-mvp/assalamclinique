@@ -31,7 +31,14 @@ import {
 } from "@/components/ui/dialog";
 import { MODES, ORGANISMES, type Mode } from "@/lib/erp/catalog";
 import { detectFromName, hasAnomaly, isCarteMutuelleFile } from "@/lib/erp/detect";
-import { buildDossierPdf, dossierFileName, dossierPdfUrl } from "@/lib/erp/dossier-pdf";
+import {
+  buildDossierPdf,
+  bytesToDataUri,
+  compileDossierBytes,
+  dossierFileName,
+  dossierPdfUrl,
+  downloadDataUri,
+} from "@/lib/erp/dossier-pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
@@ -512,29 +519,30 @@ function Wizard({ onExit }: { onExit: () => void }) {
 
   const pdfName = `${st.dosMode === "PEC" ? "PEC" : "EXP"}_${st.dosOrg}_Ouassim-BEN-MASSAOUD_CLINI-01.pdf`;
 
-  const download = async () => {
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    for (let i = 0; i < ordered.length; i++) {
-      const s = ordered[i]!;
-      if (i > 0) doc.addPage();
-      doc.setFontSize(11);
-      doc.text(
-        `${i + 1}. ${s.pieceId ? (labels[s.pieceId] ?? s.pieceId) : "Non classé"}${s.side ? ` (${s.side})` : ""}`,
-        40,
-        40,
-      );
-      if (s.mime.startsWith("image/")) {
-        try {
-          doc.addImage(s.url, 40, 60, 515, 700, undefined, "FAST");
-        } catch {
-          doc.text(s.fileName, 40, 80);
-        }
-      } else {
-        doc.text(s.fileName, 40, 80);
-      }
-    }
-    doc.save(pdfName);
+  const [compiled, setCompiled] = useState<string | null>(null);
+
+  const generate = async () => {
+    toast.loading("Compilation du dossier…", { id: "compile" });
+    const bytes = await compileDossierBytes(ordered, {
+      title: pdfName.replace(/\.pdf$/, ""),
+      patient: "Ouassim BEN MASSAOUD",
+      intervention: st.interventions.find((i) => i.id === st.dosProfil)?.name ?? "—",
+      organisme: st.dosOrg,
+      mode: st.dosMode === "PEC" ? "Prise en charge" : "Expédition",
+      labels,
+    });
+    const dataUri = bytesToDataUri(bytes);
+    setCompiled(dataUri);
+    st.setGenerated(pdfName);
+    st.commitDossier("Audité", dataUri);
+    toast.dismiss("compile");
+    toast.success(`Dossier généré : ${pdfName}`);
+  };
+
+  const download = () => {
+    if (!compiled) return;
+    downloadDataUri(compiled, pdfName);
+    toast.success(`Téléchargement : ${pdfName}`);
   };
 
   return (
@@ -921,18 +929,14 @@ function Wizard({ onExit }: { onExit: () => void }) {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Button
               className="rounded-xl"
-              onClick={() => {
-                st.setGenerated(pdfName);
-                st.commitDossier("Audité");
-                toast.success(`Dossier généré : ${pdfName}`);
-              }}
+              onClick={generate}
             >
               <FileText className="size-4" /> Générer le dossier
             </Button>
             <Button
               variant="secondary"
               className="rounded-xl"
-              disabled={!st.generated}
+              disabled={!st.generated || !compiled}
               onClick={download}
             >
               <Download className="size-4" /> Télécharger le dossier (PDF)
