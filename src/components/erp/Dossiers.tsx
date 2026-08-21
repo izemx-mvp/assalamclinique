@@ -151,10 +151,15 @@ export function Dossiers() {
   }, [detail]);
 
   const downloadDossier = async (d: DossierRecord) => {
-    const doc = await buildDossierPdf(d, names[d.interventionId] ?? "—", orgLabel(d.org));
-    doc.save(dossierFileName(d));
+    if (d.pdfData) {
+      downloadDataUri(d.pdfData, dossierFileName(d));
+    } else {
+      const doc = await buildDossierPdf(d, names[d.interventionId] ?? "—", orgLabel(d.org));
+      doc.save(dossierFileName(d));
+    }
     toast.success(`Téléchargement : ${dossierFileName(d)}`);
   };
+
 
 
   if (mode === "wizard") return <Wizard onExit={() => setMode("list")} />;
