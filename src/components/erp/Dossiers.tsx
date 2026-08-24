@@ -421,24 +421,28 @@ function Wizard({ onExit }: { onExit: () => void }) {
     Array.from(files).forEach((file) => {
       const d = detectFromName(file.name);
       const forced = missingTarget.current;
+      const pieceId = forced ?? d.pieceId;
       const scan: Scan = {
         id: uid(),
         fileName: file.name,
         url: URL.createObjectURL(file),
         mime: file.type,
-        pieceId: forced ?? d.pieceId,
-        side: d.side,
+        pieceId,
+        // classification automatique : côté par défaut si la pièce en exige un
+        side: d.side ?? (d.needsSide ? "recto" : null),
         angle: d.angle,
         straightened: false,
       };
-      if (!forced && (d.needsSide || !d.pieceId)) setPending(scan);
-      else {
-        st.addScan(scan);
-        toast.success(`Reconnu : ${labels[scan.pieceId!] ?? scan.pieceId}`);
-      }
+      st.addScan(scan);
+      toast.success(
+        pieceId
+          ? `Reconnu : ${labels[pieceId] ?? pieceId}`
+          : `Importé : ${file.name} (à rattacher automatiquement)`,
+      );
     });
     missingTarget.current = null;
   };
+
 
   const doReplace = (files: FileList | null) => {
     const file = files?.[0];
