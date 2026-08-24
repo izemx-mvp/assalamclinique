@@ -374,7 +374,6 @@ function Wizard({ onExit }: { onExit: () => void }) {
   );
 
   const [step, setStep] = useState(1);
-  const [pending, setPending] = useState<Scan | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [log, setLog] = useState<AuditStep[]>([]);
   const [running, setRunning] = useState(false);
@@ -421,24 +420,28 @@ function Wizard({ onExit }: { onExit: () => void }) {
     Array.from(files).forEach((file) => {
       const d = detectFromName(file.name);
       const forced = missingTarget.current;
+      const pieceId = forced ?? d.pieceId;
       const scan: Scan = {
         id: uid(),
         fileName: file.name,
         url: URL.createObjectURL(file),
         mime: file.type,
-        pieceId: forced ?? d.pieceId,
-        side: d.side,
+        pieceId,
+        // classification automatique : côté par défaut si la pièce en exige un
+        side: d.side ?? (d.needsSide ? "recto" : null),
         angle: d.angle,
         straightened: false,
       };
-      if (!forced && (d.needsSide || !d.pieceId)) setPending(scan);
-      else {
-        st.addScan(scan);
-        toast.success(`Reconnu : ${labels[scan.pieceId!] ?? scan.pieceId}`);
-      }
+      st.addScan(scan);
+      toast.success(
+        pieceId
+          ? `Reconnu : ${labels[pieceId] ?? pieceId}`
+          : `Importé : ${file.name} (à rattacher automatiquement)`,
+      );
     });
     missingTarget.current = null;
   };
+
 
   const doReplace = (files: FileList | null) => {
     const file = files?.[0];
@@ -960,50 +963,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
         </Panel>
       )}
 
-      <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
-        <DialogContent className="glass">
-          <DialogHeader>
-            <DialogTitle>Classer le document</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">{pending?.fileName}</p>
-          <div className="max-h-56 space-y-2 overflow-y-auto">
-            {pending?.pieceId === "cin_patient" ? (
-              <div className="flex gap-2">
-                {(["recto", "verso"] as const).map((side) => (
-                  <Button
-                    key={side}
-                    variant="secondary"
-                    className="flex-1 rounded-xl"
-                    onClick={() => {
-                      st.addScan({ ...pending, side });
-                      setPending(null);
-                      toast.success(`CIN patient (${side}) ajoutée`);
-                    }}
-                  >
-                    {side}
-                  </Button>
-                ))}
-              </div>
-            ) : (
-              st.pieces.map((p) => (
-                <button
-                  key={p.id}
-                  className="glass-soft w-full rounded-xl px-3 py-2 text-left text-sm hover:text-accent"
-                  onClick={() => {
-                    if (!pending) return;
-                    st.addScan({ ...pending, pieceId: p.id });
-                    setPending(null);
-                    toast.success(`Classé : ${p.label}`);
-                  }}
-                >
-                  {p.label}
-                </button>
-              ))
-            )}
-          </div>
-          <DialogFooter />
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
