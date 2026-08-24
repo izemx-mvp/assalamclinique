@@ -60,9 +60,13 @@ export function Parametrage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
-  const pages = Math.max(1, Math.ceil(st.interventions.length / pageSize));
+  const orderedInterventions = useMemo(
+    () => [...st.interventions].reverse(),
+    [st.interventions],
+  );
+  const pages = Math.max(1, Math.ceil(orderedInterventions.length / pageSize));
   const safePage = Math.min(page, pages);
-  const pagedInterventions = st.interventions.slice(
+  const pagedInterventions = orderedInterventions.slice(
     (safePage - 1) * pageSize,
     safePage * pageSize,
   );
@@ -90,12 +94,17 @@ export function Parametrage() {
       });
       toast.success("Intervention modifiée");
     } else {
-      st.addIntervention({
+      const newId = st.addIntervention({
         name: form.name.trim(),
         specialite: form.specialite,
         defaultMode: form.defaultMode,
       });
       toast.success("Intervention créée");
+      setFormOpen(false);
+      setForm(emptyForm);
+      setPage(1);
+      setDetail(newId);
+      return;
     }
     setFormOpen(false);
     setForm(emptyForm);
