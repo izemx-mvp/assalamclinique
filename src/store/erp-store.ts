@@ -2,12 +2,13 @@ import { create } from "zustand";
 import {
   buildDefaultEntries,
   configKey,
+  INTERVENTIONS_SEED,
   PIECES,
-  PROFILS,
   type Entry,
   type Mode,
   type PieceDef,
 } from "@/lib/erp/catalog";
+
 
 export type Scan = {
   id: string;
