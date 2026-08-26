@@ -138,8 +138,9 @@ const IDENT_FACTURATION: Rule[] = [
   { id: "cin_patient", on: () => true },
   { id: "carte_mutuelle", on: () => true },
   { id: "cin_assure", on: () => true },
-  { id: "feuille_ras", on: exp(["CNSS"]) },
-  { id: "accord_pec", on: (o, m) => (m === "PEC" ? o === "FAR" : true) },
+  { id: "feuille_ras", on: exp(["CNSS", "CNOPS", "FAR"]) },
+  { id: "accord_pec", on: exp() },
+
   { id: "facture_forfaitaire", on: exp(["CNSS"]) },
   { id: "facture_forfaitaire_ras", on: exp(["CNOPS", "FAR"]) },
   { id: "facture_detaillee", on: exp(["CMIM", "BP", "BAM", "MGBM", "ETR"]) },
@@ -149,7 +150,7 @@ const IDENT_FACTURATION: Rule[] = [
 
 const P = (id: string): Rule => ({ id, on: pec() });
 const E = (id: string): Rule => ({ id, on: exp() });
-const B = (id: string): Rule => ({ id, on: both() });
+
 
 /** Pièces cliniques (insérées après le bloc administratif). */
 const CLINIQUE: Record<string, Rule[]> = {
@@ -169,17 +170,18 @@ const CLINIQUE: Record<string, Rule[]> = {
   cervecotomie: [P("cr_radio")],
   fistule_anale: [],
   canal_carpien: [P("enmg")],
-  ptg: [B("cr_radio_preop"), B("declaration_honneur"), P("devis_materiel")],
-  fracture: [B("cr_radio_preop"), B("declaration_honneur"), P("devis_materiel")],
+  ptg: [P("cr_radio_preop"), P("declaration_honneur"), P("devis_materiel")],
+  fracture: [P("cr_radio_preop"), P("declaration_honneur"), P("devis_materiel")],
   circoncision: [],
   fistuliographie: [],
   fav: [P("bilan_bio")],
   catheter: [P("bilan_bio")],
   coronarographie: [P("ett"), P("ecg"), P("troponine")],
-  dilatation_coronaire: [P("ett"), P("ecg"), P("troponine"), B("cr_corona")],
+  dilatation_coronaire: [P("cr_corona"), P("ett"), P("ecg"), P("troponine")],
   pacemaker: [P("ecg"), P("ett"), P("holter")],
-  pontage_coronaire: [P("ett"), P("ecg"), B("cr_corona"), P("bilan_bio_chirurgien")],
-  remplacement_valvulaire: [P("ett"), P("ecg")],
+  pontage_coronaire: [P("cr_corona"), P("ett"), P("ecg"), P("bilan_bio_chirurgien")],
+  remplacement_valvulaire: [P("cr_corona"), P("ett"), P("ecg"), P("bilan_bio_chirurgien")],
+
 };
 
 /** Justificatifs médicaux Expédition (après la facturation). */
@@ -192,26 +194,34 @@ const MEDICAL_EXP: Record<string, Rule[]> = {
   hysterectomie: [E("cr_operatoire"), E("anapath")],
   appendicite: [E("cr_operatoire"), E("anapath")],
   prostate: [E("cr_operatoire"), E("anapath")],
-  varicocelle: [E("cr_operatoire"), E("anapath")],
-  hydrocelle: [E("cr_operatoire"), E("anapath")],
+  varicocelle: [E("cr_operatoire")],
+  hydrocelle: [E("cr_operatoire")],
   hernie: [E("cr_operatoire")],
   amygdalectomie: [E("cr_operatoire")],
   thyroidectomie: [E("cr_operatoire"), E("anapath")],
   cervecotomie: [E("cr_operatoire")],
   fistule_anale: [E("cr_operatoire")],
   canal_carpien: [E("cr_operatoire")],
-  ptg: [E("cr_operatoire"), E("facture_materiel"), E("cr_radio_postop"), E("images_pre_post")],
-  fracture: [E("cr_operatoire"), E("facture_materiel"), E("cr_radio_postop"), E("images_pre_post")],
+  ptg: [E("cr_operatoire"), E("cr_radio_postop"), E("facture_materiel")],
+  fracture: [E("cr_operatoire"), E("cr_radio_postop"), E("facture_materiel")],
   circoncision: [E("cr_operatoire")],
   fistuliographie: [E("cr_operatoire"), E("cd_fistulographie")],
   fav: [E("cr_operatoire")],
   catheter: [E("cr_operatoire")],
-  coronarographie: [E("cr_corona"), E("cd_corona")],
-  dilatation_coronaire: [E("cd_dilatation"), E("vignettes_stents"), E("facture_stents")],
-  pacemaker: [E("ecg_postop"), E("carnet_pacemaker"), E("vignettes_pacemaker")],
+  coronarographie: [E("cr_operatoire"), E("cd_corona")],
+  dilatation_coronaire: [
+    E("cr_operatoire"),
+    E("cr_corona"),
+    E("cd_dilatation"),
+    E("vignettes_stents"),
+    E("facture_stents"),
+    E("images_pre_post"),
+  ],
+  pacemaker: [E("cr_operatoire"), E("ecg_postop"), E("vignettes_pacemaker"), E("carnet_pacemaker")],
   pontage_coronaire: [E("cr_operatoire")],
-  remplacement_valvulaire: [E("cr_operatoire"), E("etiquette_valve")],
+  remplacement_valvulaire: [E("cr_operatoire"), E("cr_corona"), E("etiquette_valve")],
 };
+
 
 /** Séquence ordonnée complète des pièces d'une intervention. */
 function sequence(profil: string): Rule[] {
