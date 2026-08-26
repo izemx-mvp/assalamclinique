@@ -107,29 +107,19 @@ type Actions = {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const SPECIALITES: Record<string, string> = {
-  cholecystite: "Chirurgie viscérale",
-  cesarienne: "Gynécologie-obstétrique",
-  cataracte: "Ophtalmologie",
-  pth: "Orthopédie",
-  accouchement: "Gynécologie-obstétrique",
-  amygdalectomie: "ORL",
-  coronarographie: "Cardiologie",
-  appendicectomie: "Chirurgie viscérale",
-};
-
 const AUTHORS = ["Dr. Alami", "Yassine E.", "Admin SI", "Dr. Bennani"];
 
-const INITIAL_INTERVENTIONS: Intervention[] = PROFILS.map((p, i) => ({
+const INITIAL_INTERVENTIONS: Intervention[] = INTERVENTIONS_SEED.map((p, i) => ({
   id: p.id,
-  code: `INT-${String(i + 1).padStart(3, "0")}`,
+  code: p.code,
   name: p.name,
-  specialite: SPECIALITES[p.id] ?? "Générale",
+  specialite: p.specialite,
   defaultMode: "PEC" as Mode,
-  createdAt: `0${(i % 9) + 1}/03/2026`,
+  createdAt: `${String((i % 28) + 1).padStart(2, "0")}/03/2026`,
   createdBy: AUTHORS[i % AUTHORS.length]!,
   active: true,
 }));
+
 
 const INITIAL_DOSSIERS: DossierRecord[] = [
   {
