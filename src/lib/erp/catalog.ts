@@ -138,8 +138,9 @@ const IDENT_FACTURATION: Rule[] = [
   { id: "cin_patient", on: () => true },
   { id: "carte_mutuelle", on: () => true },
   { id: "cin_assure", on: () => true },
-  { id: "feuille_ras", on: exp(["CNSS"]) },
-  { id: "accord_pec", on: (o, m) => (m === "PEC" ? o === "FAR" : true) },
+  { id: "feuille_ras", on: exp(["CNSS", "CNOPS", "FAR"]) },
+  { id: "accord_pec", on: exp() },
+
   { id: "facture_forfaitaire", on: exp(["CNSS"]) },
   { id: "facture_forfaitaire_ras", on: exp(["CNOPS", "FAR"]) },
   { id: "facture_detaillee", on: exp(["CMIM", "BP", "BAM", "MGBM", "ETR"]) },
