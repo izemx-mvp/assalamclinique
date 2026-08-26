@@ -288,7 +288,8 @@ export function Parametrage() {
 
 function Referentiel({ interventionId }: { interventionId: string }) {
   const st = useErp();
-  const entries = useErp((s) => s.entries)(interventionId, st.selOrg, st.selMode);
+  const allEntries = useErp((s) => s.entries)(interventionId, st.selOrg, st.selMode);
+  const entries = useMemo(() => allEntries.filter((e) => e.active), [allEntries]);
   const dirty = useErp((s) => s.isDirty)(interventionId, st.selOrg, st.selMode);
   const intervention = st.interventions.find((i) => i.id === interventionId);
   const [newDoc, setNewDoc] = useState("");
