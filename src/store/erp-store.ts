@@ -193,16 +193,69 @@ function loadDossiers(): DossierRecord[] {
   }
 }
 
+/** Persistance locale du paramétrage partagé (interventions + matrices de pièces). */
+const CONFIG_KEY = "assalam-erp-config";
+
+type ConfigSnapshot = {
+  interventions: Intervention[];
+  pieces: PieceDef[];
+  draft: Record<string, Entry[]>;
+  saved: Record<string, Entry[]>;
+};
+
+function loadConfig(): ConfigSnapshot {
+  const fallback: ConfigSnapshot = {
+    interventions: INITIAL_INTERVENTIONS,
+    pieces: [...PIECES],
+    draft: {},
+    saved: {},
+  };
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(CONFIG_KEY);
+    if (!raw) return fallback;
+    const p = JSON.parse(raw) as Partial<ConfigSnapshot>;
+    return {
+      interventions: p.interventions?.length ? p.interventions : fallback.interventions,
+      pieces: p.pieces?.length ? p.pieces : fallback.pieces,
+      draft: p.draft ?? {},
+      saved: p.saved ?? {},
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function persistConfig(s: State) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      CONFIG_KEY,
+      JSON.stringify({
+        interventions: s.interventions,
+        pieces: s.pieces,
+        draft: s.draft,
+        saved: s.saved,
+      }),
+    );
+  } catch {
+    /* ignoré */
+  }
+}
+
+const INITIAL_CONFIG = loadConfig();
+
 export const useErp = create<State & Actions>((set, get) => ({
-  interventions: INITIAL_INTERVENTIONS,
-  pieces: [...PIECES],
-  selProfil: "cholecystite",
+  interventions: INITIAL_CONFIG.interventions,
+  pieces: INITIAL_CONFIG.pieces,
+  selProfil: INITIAL_CONFIG.interventions[0]?.id ?? "cesarienne",
   selOrg: "CNSS",
   selMode: "PEC",
-  draft: {},
-  saved: {},
+  draft: INITIAL_CONFIG.draft,
+  saved: INITIAL_CONFIG.saved,
   dirty: {},
   dossiers: loadDossiers(),
+
   dosProfil: "cholecystite",
   dosMode: "PEC",
   dosOrg: "CNSS",
