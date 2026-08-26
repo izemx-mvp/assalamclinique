@@ -150,7 +150,7 @@ const IDENT_FACTURATION: Rule[] = [
 
 const P = (id: string): Rule => ({ id, on: pec() });
 const E = (id: string): Rule => ({ id, on: exp() });
-const B = (id: string): Rule => ({ id, on: both() });
+
 
 /** Pièces cliniques (insérées après le bloc administratif). */
 const CLINIQUE: Record<string, Rule[]> = {
