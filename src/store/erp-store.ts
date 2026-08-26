@@ -2,12 +2,13 @@ import { create } from "zustand";
 import {
   buildDefaultEntries,
   configKey,
+  INTERVENTIONS_SEED,
   PIECES,
-  PROFILS,
   type Entry,
   type Mode,
   type PieceDef,
 } from "@/lib/erp/catalog";
+
 
 export type Scan = {
   id: string;
@@ -107,29 +108,19 @@ type Actions = {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const SPECIALITES: Record<string, string> = {
-  cholecystite: "Chirurgie viscérale",
-  cesarienne: "Gynécologie-obstétrique",
-  cataracte: "Ophtalmologie",
-  pth: "Orthopédie",
-  accouchement: "Gynécologie-obstétrique",
-  amygdalectomie: "ORL",
-  coronarographie: "Cardiologie",
-  appendicectomie: "Chirurgie viscérale",
-};
-
 const AUTHORS = ["Dr. Alami", "Yassine E.", "Admin SI", "Dr. Bennani"];
 
-const INITIAL_INTERVENTIONS: Intervention[] = PROFILS.map((p, i) => ({
+const INITIAL_INTERVENTIONS: Intervention[] = INTERVENTIONS_SEED.map((p, i) => ({
   id: p.id,
-  code: `INT-${String(i + 1).padStart(3, "0")}`,
+  code: p.code,
   name: p.name,
-  specialite: SPECIALITES[p.id] ?? "Générale",
+  specialite: p.specialite,
   defaultMode: "PEC" as Mode,
-  createdAt: `0${(i % 9) + 1}/03/2026`,
+  createdAt: `${String((i % 28) + 1).padStart(2, "0")}/03/2026`,
   createdBy: AUTHORS[i % AUTHORS.length]!,
   active: true,
 }));
+
 
 const INITIAL_DOSSIERS: DossierRecord[] = [
   {
@@ -202,17 +193,70 @@ function loadDossiers(): DossierRecord[] {
   }
 }
 
+/** Persistance locale du paramétrage partagé (interventions + matrices de pièces). */
+const CONFIG_KEY = "assalam-erp-config";
+
+type ConfigSnapshot = {
+  interventions: Intervention[];
+  pieces: PieceDef[];
+  draft: Record<string, Entry[]>;
+  saved: Record<string, Entry[]>;
+};
+
+function loadConfig(): ConfigSnapshot {
+  const fallback: ConfigSnapshot = {
+    interventions: INITIAL_INTERVENTIONS,
+    pieces: [...PIECES],
+    draft: {},
+    saved: {},
+  };
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(CONFIG_KEY);
+    if (!raw) return fallback;
+    const p = JSON.parse(raw) as Partial<ConfigSnapshot>;
+    return {
+      interventions: p.interventions?.length ? p.interventions : fallback.interventions,
+      pieces: p.pieces?.length ? p.pieces : fallback.pieces,
+      draft: p.draft ?? {},
+      saved: p.saved ?? {},
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+function persistConfig(s: State) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      CONFIG_KEY,
+      JSON.stringify({
+        interventions: s.interventions,
+        pieces: s.pieces,
+        draft: s.draft,
+        saved: s.saved,
+      }),
+    );
+  } catch {
+    /* ignoré */
+  }
+}
+
+const INITIAL_CONFIG = loadConfig();
+
 export const useErp = create<State & Actions>((set, get) => ({
-  interventions: INITIAL_INTERVENTIONS,
-  pieces: [...PIECES],
-  selProfil: "cholecystite",
+  interventions: INITIAL_CONFIG.interventions,
+  pieces: INITIAL_CONFIG.pieces,
+  selProfil: INITIAL_CONFIG.interventions[0]?.id ?? "cesarienne",
   selOrg: "CNSS",
   selMode: "PEC",
-  draft: {},
-  saved: {},
+  draft: INITIAL_CONFIG.draft,
+  saved: INITIAL_CONFIG.saved,
   dirty: {},
   dossiers: loadDossiers(),
-  dosProfil: "cholecystite",
+
+  dosProfil: INITIAL_CONFIG.interventions[0]?.id ?? "cesarienne",
   dosMode: "PEC",
   dosOrg: "CNSS",
   scans: [],
@@ -225,13 +269,13 @@ export const useErp = create<State & Actions>((set, get) => ({
   entries: (profil, org, mode) => {
     const s = get();
     const key = configKey(profil ?? s.selProfil, org ?? s.selOrg, mode ?? s.selMode);
-    return s.draft[key] ?? buildDefaultEntries(org ?? s.selOrg, mode ?? s.selMode);
+    return s.draft[key] ?? buildDefaultEntries(profil ?? s.selProfil, org ?? s.selOrg, mode ?? s.selMode);
   },
 
   savedOrder: (profil, org, mode) => {
     const s = get();
     const key = configKey(profil, org, mode);
-    const list = s.saved[key] ?? buildDefaultEntries(org, mode);
+    const list = s.saved[key] ?? buildDefaultEntries(profil, org, mode);
     return list.filter((e) => e.active).map((e) => e.pieceId);
   },
 
@@ -240,7 +284,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   togglePiece: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         draft: {
           ...s.draft,
@@ -253,7 +297,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   removeFromReferentiel: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         draft: { ...s.draft, [key]: cur.filter((e) => e.pieceId !== pieceId) },
         dirty: { ...s.dirty, [key]: true },
@@ -263,7 +307,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   addPieceToConfig: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
       if (cur.some((e) => e.pieceId === pieceId)) return {};
       return {
         draft: { ...s.draft, [key]: [...cur, { pieceId, active: true }] },
@@ -280,7 +324,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   moveActive: (pieceId, dir) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = [...(s.draft[key] ?? buildDefaultEntries(s.selOrg, s.selMode))];
+      const cur = [...(s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode))];
       const actives = cur.filter((e) => e.active);
       const i = actives.findIndex((e) => e.pieceId === pieceId);
       const j = i + dir;
@@ -296,7 +340,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   reorderActive: (fromId, toId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = [...(s.draft[key] ?? buildDefaultEntries(s.selOrg, s.selMode))];
+      const cur = [...(s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode))];
       const actives = cur.filter((e) => e.active);
       const from = actives.findIndex((e) => e.pieceId === fromId);
       const to = actives.findIndex((e) => e.pieceId === toId);
@@ -313,7 +357,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   removeActive: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         draft: {
           ...s.draft,
@@ -326,7 +370,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   saveOrder: () =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         saved: { ...s.saved, [key]: cur.map((e) => ({ ...e })) },
         draft: { ...s.draft, [key]: cur },
@@ -456,3 +500,7 @@ export const useErp = create<State & Actions>((set, get) => ({
     }),
 }));
 
+// Synchronisation temps réel du paramétrage entre les deux sous-modules.
+if (typeof window !== "undefined") {
+  useErp.subscribe((s) => persistConfig(s));
+}
