@@ -256,7 +256,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   dirty: {},
   dossiers: loadDossiers(),
 
-  dosProfil: "cholecystite",
+  dosProfil: INITIAL_CONFIG.interventions[0]?.id ?? "cesarienne",
   dosMode: "PEC",
   dosOrg: "CNSS",
   scans: [],
@@ -500,3 +500,7 @@ export const useErp = create<State & Actions>((set, get) => ({
     }),
 }));
 
+// Synchronisation temps réel du paramétrage entre les deux sous-modules.
+if (typeof window !== "undefined") {
+  useErp.subscribe((s) => persistConfig(s));
+}
