@@ -170,17 +170,18 @@ const CLINIQUE: Record<string, Rule[]> = {
   cervecotomie: [P("cr_radio")],
   fistule_anale: [],
   canal_carpien: [P("enmg")],
-  ptg: [B("cr_radio_preop"), B("declaration_honneur"), P("devis_materiel")],
-  fracture: [B("cr_radio_preop"), B("declaration_honneur"), P("devis_materiel")],
+  ptg: [P("cr_radio_preop"), P("declaration_honneur"), P("devis_materiel")],
+  fracture: [P("cr_radio_preop"), P("declaration_honneur"), P("devis_materiel")],
   circoncision: [],
   fistuliographie: [],
   fav: [P("bilan_bio")],
   catheter: [P("bilan_bio")],
   coronarographie: [P("ett"), P("ecg"), P("troponine")],
-  dilatation_coronaire: [P("ett"), P("ecg"), P("troponine"), B("cr_corona")],
+  dilatation_coronaire: [P("cr_corona"), P("ett"), P("ecg"), P("troponine")],
   pacemaker: [P("ecg"), P("ett"), P("holter")],
-  pontage_coronaire: [P("ett"), P("ecg"), B("cr_corona"), P("bilan_bio_chirurgien")],
-  remplacement_valvulaire: [P("ett"), P("ecg")],
+  pontage_coronaire: [P("cr_corona"), P("ett"), P("ecg"), P("bilan_bio_chirurgien")],
+  remplacement_valvulaire: [P("cr_corona"), P("ett"), P("ecg"), P("bilan_bio_chirurgien")],
+
 };
 
 /** Justificatifs médicaux Expédition (après la facturation). */
