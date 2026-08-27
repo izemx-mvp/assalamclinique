@@ -118,6 +118,8 @@ export function Dossiers() {
   const [search, setSearch] = useState("");
   const [detail, setDetail] = useState<DossierRecord | null>(null);
   const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerTab, setViewerTab] = useState<"pdf" | "pieces">("pdf");
+  const [pieceIndex, setPieceIndex] = useState(0);
   const [toDelete, setToDelete] = useState<DossierRecord | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
