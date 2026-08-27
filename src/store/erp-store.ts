@@ -278,7 +278,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   savedOrder: (profil, org, mode) => {
     const s = get();
     const key = configKey(profil, org, mode);
-    const list = s.saved[key] ?? buildDefaultEntries(profil, org, mode);
+    const list = s.saved[key] ?? baseEntries(profil, org, mode);
     return list.filter((e) => e.active).map((e) => e.pieceId);
   },
 
@@ -287,7 +287,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   togglePiece: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         draft: {
           ...s.draft,
@@ -300,7 +300,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   removeFromReferentiel: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         draft: { ...s.draft, [key]: cur.filter((e) => e.pieceId !== pieceId) },
         dirty: { ...s.dirty, [key]: true },
@@ -310,7 +310,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   addPieceToConfig: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode);
       if (cur.some((e) => e.pieceId === pieceId)) return {};
       return {
         draft: { ...s.draft, [key]: [...cur, { pieceId, active: true }] },
@@ -327,7 +327,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   moveActive: (pieceId, dir) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = [...(s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode))];
+      const cur = [...(s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode))];
       const actives = cur.filter((e) => e.active);
       const i = actives.findIndex((e) => e.pieceId === pieceId);
       const j = i + dir;
@@ -343,7 +343,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   reorderActive: (fromId, toId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = [...(s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode))];
+      const cur = [...(s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode))];
       const actives = cur.filter((e) => e.active);
       const from = actives.findIndex((e) => e.pieceId === fromId);
       const to = actives.findIndex((e) => e.pieceId === toId);
@@ -360,7 +360,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   removeActive: (pieceId) =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         draft: {
           ...s.draft,
@@ -373,7 +373,7 @@ export const useErp = create<State & Actions>((set, get) => ({
   saveOrder: () =>
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
-      const cur = s.draft[key] ?? buildDefaultEntries(s.selProfil, s.selOrg, s.selMode);
+      const cur = s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode);
       return {
         saved: { ...s.saved, [key]: cur.map((e) => ({ ...e })) },
         draft: { ...s.draft, [key]: cur },
