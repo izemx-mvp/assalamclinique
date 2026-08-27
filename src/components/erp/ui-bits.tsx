@@ -127,3 +127,23 @@ export function Pagination({
     </div>
   );
 }
+
+/** Champ de filtre discret placé en en-tête de colonne de tableau. */
+export function FilterInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <input
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="glass-soft h-8 w-full min-w-[90px] rounded-lg px-2 text-[11px] font-normal text-foreground normal-case placeholder:text-muted-foreground/70 outline-none focus:ring-1 focus:ring-primary/50"
+    />
+  );
+}

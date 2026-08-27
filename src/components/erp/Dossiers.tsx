@@ -40,14 +40,9 @@ import {
   downloadDataUri,
 } from "@/lib/erp/dossier-pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
-import { Pagination, Panel, Segmented } from "./ui-bits";
+import { FilterInput, Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
-const PATIENT = {
-  code: "CLINI-001",
-  nom: "Ouassim BEN MASSAOUD",
-  cin: "S774138",
-};
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -131,10 +126,32 @@ export function Dossiers() {
     [st.interventions],
   );
 
-  const filtered = st.dossiers.filter((d) =>
-    `${d.num} ${d.patient} ${names[d.interventionId] ?? ""} ${d.org}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
+  const [filters, setFilters] = useState({
+    num: "",
+    patient: "",
+    intervention: "",
+    org: "",
+    createdBy: "",
+    statut: "",
+  });
+  const setFilter = (k: keyof typeof filters, v: string) => {
+    setFilters((f) => ({ ...f, [k]: v }));
+    setPage(1);
+  };
+
+  const has = (v: string, q: string) => v.toLowerCase().includes(q.trim().toLowerCase());
+
+  const filtered = st.dossiers.filter(
+    (d) =>
+      `${d.num} ${d.patient} ${names[d.interventionId] ?? ""} ${d.org}`
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      has(d.num, filters.num) &&
+      has(d.patient, filters.patient) &&
+      has(names[d.interventionId] ?? "", filters.intervention) &&
+      has(ORGANISMES.find((o) => o.id === d.org)?.label ?? d.org, filters.org) &&
+      has(d.createdBy, filters.createdBy) &&
+      (filters.statut === "" || d.statut === filters.statut),
   );
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -220,6 +237,65 @@ export function Dossiers() {
                 <th className="px-3 pb-1 font-medium">Créé par</th>
                 <th className="px-3 pb-1 font-medium">Statut</th>
                 <th className="px-3 pb-1 text-right font-medium">Actions</th>
+              </tr>
+              <tr>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.num}
+                    onChange={(v) => setFilter("num", v)}
+                    placeholder="N° dossier…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.patient}
+                    onChange={(v) => setFilter("patient", v)}
+                    placeholder="Patient…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.intervention}
+                    onChange={(v) => setFilter("intervention", v)}
+                    placeholder="Intervention…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.org}
+                    onChange={(v) => setFilter("org", v)}
+                    placeholder="Organisme…"
+                  />
+                </th>
+                <th className="px-3 pb-2" />
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.createdBy}
+                    onChange={(v) => setFilter("createdBy", v)}
+                    placeholder="Créé par…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <select
+                    value={filters.statut}
+                    onChange={(e) => setFilter("statut", e.target.value)}
+                    className="glass-soft h-8 w-full rounded-lg px-2 text-[11px] font-normal text-foreground normal-case outline-none"
+                  >
+                    <option value="" className="bg-popover">
+                      Tous
+                    </option>
+                    <option value="Brouillon" className="bg-popover">
+                      Brouillon
+                    </option>
+                    <option value="Audité" className="bg-popover">
+                      Audité
+                    </option>
+                    <option value="Transmis" className="bg-popover">
+                      Transmis
+                    </option>
+                  </select>
+                </th>
+                <th className="px-3 pb-2" />
               </tr>
             </thead>
             <tbody>
@@ -387,7 +463,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
     st.scans.some((s) => s.pieceId === "cin_patient" && s.side === side);
 
   const satisfied = (pieceId: string) => {
-    if (pieceId === "cin_assure") return true;
+    // La CIN assuré n'est validée qu'après import effectif d'un document.
     if (pieceId === "cin_patient") return hasSide("recto") && hasSide("verso");
     // Règle stricte : la carte mutuelle exige un fichier nommé "carte mut…"
     if (pieceId === "carte_mutuelle")
@@ -523,6 +599,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
   const pdfName = `${st.dosMode === "PEC" ? "PEC" : "EXP"}_${st.dosOrg}_Ouassim-BEN-MASSAOUD_CLINI-01.pdf`;
 
   const [compiled, setCompiled] = useState<string | null>(null);
+  const [dossierId, setDossierId] = useState<string | null>(null);
 
   const generate = async () => {
     toast.loading("Compilation du dossier…", { id: "compile" });
@@ -537,7 +614,9 @@ function Wizard({ onExit }: { onExit: () => void }) {
     const dataUri = bytesToDataUri(bytes);
     setCompiled(dataUri);
     st.setGenerated(pdfName);
-    st.commitDossier("Audité", dataUri);
+    // Insertion dans l'historique avec les données extraites des documents
+    setDossierId(dossierId ?? st.commitDossier("Audité", dataUri));
+    if (dossierId) st.updateDossier(dossierId, { statut: "Audité", pdfData: dataUri });
     toast.dismiss("compile");
     toast.success(`Dossier généré : ${pdfName}`);
   };
@@ -567,9 +646,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
             <div className="min-w-0">
               <p className="text-sm font-semibold">Nouveau Dossier</p>
               <p className="text-[11px] text-muted-foreground">
-                Patient : {PATIENT.nom} | CIN : {PATIENT.cin} | Organisme :{" "}
-                {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
-                {st.interventions.find((p) => p.id === st.dosProfil)?.name}
+                Importez les scans : les données patient seront extraites des documents
               </p>
             </div>
           </div>
@@ -949,6 +1026,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
               disabled={!st.generated || st.transmitted}
               onClick={() => {
                 st.setTransmitted(true);
+                if (dossierId) st.updateDossier(dossierId, { statut: "Transmis" });
                 toast.success(
                   st.dosMode === "PEC"
                     ? "Dossier transmis à la PEC"
