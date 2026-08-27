@@ -192,14 +192,26 @@ function persistDossiers(dossiers: DossierRecord[]) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(dossiers));
   } catch {
-    // quota dépassé : on retente sans les binaires PDF
+    // quota dépassé : on retente sans les aperçus, puis sans les binaires PDF
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify(dossiers.map(({ pdfData: _pdf, ...d }) => d)),
+        JSON.stringify(
+          dossiers.map((d) => ({
+            ...d,
+            items: d.items?.map(({ preview: _p, ...it }) => it),
+          })),
+        ),
       );
     } catch {
-      /* ignoré */
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(dossiers.map(({ pdfData: _pdf, items: _it, ...d }) => d)),
+        );
+      } catch {
+        /* ignoré */
+      }
     }
   }
 }
