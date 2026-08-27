@@ -131,10 +131,32 @@ export function Dossiers() {
     [st.interventions],
   );
 
-  const filtered = st.dossiers.filter((d) =>
-    `${d.num} ${d.patient} ${names[d.interventionId] ?? ""} ${d.org}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
+  const [filters, setFilters] = useState({
+    num: "",
+    patient: "",
+    intervention: "",
+    org: "",
+    createdBy: "",
+    statut: "",
+  });
+  const setFilter = (k: keyof typeof filters, v: string) => {
+    setFilters((f) => ({ ...f, [k]: v }));
+    setPage(1);
+  };
+
+  const has = (v: string, q: string) => v.toLowerCase().includes(q.trim().toLowerCase());
+
+  const filtered = st.dossiers.filter(
+    (d) =>
+      `${d.num} ${d.patient} ${names[d.interventionId] ?? ""} ${d.org}`
+        .toLowerCase()
+        .includes(search.toLowerCase()) &&
+      has(d.num, filters.num) &&
+      has(d.patient, filters.patient) &&
+      has(names[d.interventionId] ?? "", filters.intervention) &&
+      has(ORGANISMES.find((o) => o.id === d.org)?.label ?? d.org, filters.org) &&
+      has(d.createdBy, filters.createdBy) &&
+      (filters.statut === "" || d.statut === filters.statut),
   );
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
