@@ -57,6 +57,8 @@ export type DossierRecord = {
   pages: number;
   /** PDF compilé complet (data URI base64), persisté pour le téléchargement depuis l'historique. */
   pdfData?: string;
+  /** Suite ordonnée exacte des pièces importées lors de la création. */
+  items?: DossierItem[];
 };
 
 
