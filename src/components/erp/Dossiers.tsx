@@ -827,7 +827,17 @@ function Wizard({ onExit }: { onExit: () => void }) {
                             {hasSide("verso") ? "✓" : "–"}
                           </p>
                         )}
+                        {id === "cin_assure" && assureAuto && (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            Patient = assuré détecté · couvert par CIN patient
+                          </p>
+                        )}
                       </div>
+                      {id === "cin_assure" && assureAuto && (
+                        <span className="shrink-0 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
+                          Auto
+                        </span>
+                      )}
                       {ok && <span className="text-sm text-success">✓</span>}
                     </div>
                   );
