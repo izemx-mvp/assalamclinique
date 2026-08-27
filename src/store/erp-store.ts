@@ -520,7 +520,7 @@ export const useErp = create<State & Actions>((set, get) => ({
       return { dossiers };
     }),
 
-  commitDossier: (statut, pdfData) => {
+  commitDossier: (statut, pdfData, items) => {
     const newId = uid();
     set((st) => {
       const num = `DOS-2026-${String(st.dossiers.length + 1).padStart(4, "0")}`;
@@ -538,6 +538,7 @@ export const useErp = create<State & Actions>((set, get) => ({
           statut,
           pages: st.scans.length,
           ...(pdfData ? { pdfData } : {}),
+          ...(items ? { items } : {}),
         },
       ];
       persistDossiers(dossiers);
