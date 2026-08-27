@@ -648,9 +648,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
             <div className="min-w-0">
               <p className="text-sm font-semibold">Nouveau Dossier</p>
               <p className="text-[11px] text-muted-foreground">
-                Patient : {PATIENT.nom} | CIN : {PATIENT.cin} | Organisme :{" "}
-                {ORGANISMES.find((o) => o.id === st.dosOrg)?.label} | Intervention :{" "}
-                {st.interventions.find((p) => p.id === st.dosProfil)?.name}
+                Importez les scans : les données patient seront extraites des documents
               </p>
             </div>
           </div>
