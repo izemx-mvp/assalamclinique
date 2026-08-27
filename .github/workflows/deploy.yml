@@ -8,3 +8,4 @@ jobs:
   deploy:
     uses: izemx-mvp/.github/.github/workflows/mvp-deploy.yml@main
     secrets: inherit
+
