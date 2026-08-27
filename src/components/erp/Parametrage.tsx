@@ -103,6 +103,7 @@ export function Parametrage() {
       setFormOpen(false);
       setForm(emptyForm);
       setPage(1);
+      st.setSel({ selProfil: newId, selMode: form.defaultMode });
       setDetail(newId);
       return;
     }
