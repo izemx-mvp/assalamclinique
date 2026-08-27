@@ -32,6 +32,18 @@ export type Intervention = {
   active: boolean;
 };
 
+/** Instantané persistable d'une pièce compilée dans un dossier. */
+export type DossierItem = {
+  order: number;
+  fileName: string;
+  mime: string;
+  label: string;
+  side: "recto" | "verso" | null;
+  angle: number;
+  /** Aperçu (data URL) pour les pièces image. */
+  preview?: string;
+};
+
 export type DossierRecord = {
   id: string;
   num: string;
@@ -45,6 +57,8 @@ export type DossierRecord = {
   pages: number;
   /** PDF compilé complet (data URI base64), persisté pour le téléchargement depuis l'historique. */
   pdfData?: string;
+  /** Suite ordonnée exacte des pièces importées lors de la création. */
+  items?: DossierItem[];
 };
 
 
@@ -102,7 +116,11 @@ type Actions = {
   setAuditRan: (v: boolean) => void;
   setGenerated: (v: string | null) => void;
   setTransmitted: (v: boolean) => void;
-  commitDossier: (statut: DossierRecord["statut"], pdfData?: string) => string;
+  commitDossier: (
+    statut: DossierRecord["statut"],
+    pdfData?: string,
+    items?: DossierItem[],
+  ) => string;
   updateDossier: (id: string, patch: Partial<DossierRecord>) => void;
   removeDossier: (id: string) => void;
 };
@@ -178,14 +196,26 @@ function persistDossiers(dossiers: DossierRecord[]) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(dossiers));
   } catch {
-    // quota dépassé : on retente sans les binaires PDF
+    // quota dépassé : on retente sans les aperçus, puis sans les binaires PDF
     try {
       window.localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify(dossiers.map(({ pdfData: _pdf, ...d }) => d)),
+        JSON.stringify(
+          dossiers.map((d) => ({
+            ...d,
+            items: d.items?.map(({ preview: _p, ...it }) => it),
+          })),
+        ),
       );
     } catch {
-      /* ignoré */
+      try {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(dossiers.map(({ pdfData: _pdf, items: _it, ...d }) => d)),
+        );
+      } catch {
+        /* ignoré */
+      }
     }
   }
 }
@@ -490,7 +520,7 @@ export const useErp = create<State & Actions>((set, get) => ({
       return { dossiers };
     }),
 
-  commitDossier: (statut, pdfData) => {
+  commitDossier: (statut, pdfData, items) => {
     const newId = uid();
     set((st) => {
       const num = `DOS-2026-${String(st.dossiers.length + 1).padStart(4, "0")}`;
@@ -508,6 +538,7 @@ export const useErp = create<State & Actions>((set, get) => ({
           statut,
           pages: st.scans.length,
           ...(pdfData ? { pdfData } : {}),
+          ...(items ? { items } : {}),
         },
       ];
       persistDossiers(dossiers);

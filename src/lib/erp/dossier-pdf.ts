@@ -1,10 +1,10 @@
-import type { DossierRecord, Scan } from "@/store/erp-store";
+import type { DossierItem, DossierRecord, Scan } from "@/store/erp-store";
 
 export const dossierFileName = (d: DossierRecord) =>
   `${d.mode === "PEC" ? "PEC" : "EXP"}_${d.org}_${d.num}.pdf`;
 
 /** Charge une image (blob url incluse) et la convertit en data URL exploitable par jsPDF. */
-async function toDataUrl(url: string): Promise<{ data: string; w: number; h: number } | null> {
+export async function toDataUrl(url: string): Promise<{ data: string; w: number; h: number } | null> {
   try {
     const img = await new Promise<HTMLImageElement>((res, rej) => {
       const el = new Image();
@@ -120,6 +120,35 @@ export async function compileDossierBytes(scans: Scan[], meta: CompileMeta): Pro
   const pageList = pdf.getPages();
   rotate270.forEach((idx) => pageList[idx]?.setRotation(degrees(270)));
   return await pdf.save();
+}
+
+/**
+ * Photographie l'état exact des scans importés (ordre 1..N, aperçus persistables)
+ * afin de pouvoir rejouer le dossier depuis l'historique après rechargement.
+ */
+export async function buildDossierItems(
+  scans: Scan[],
+  labels: Record<string, string>,
+): Promise<DossierItem[]> {
+  const items: DossierItem[] = [];
+  for (let i = 0; i < scans.length; i++) {
+    const s = scans[i]!;
+    let preview: string | undefined;
+    if (s.mime.startsWith("image/")) {
+      const img = await toDataUrl(s.url);
+      if (img) preview = img.data;
+    }
+    items.push({
+      order: i + 1,
+      fileName: s.fileName,
+      mime: s.mime,
+      label: s.pieceId ? (labels[s.pieceId] ?? s.pieceId) : "Non classé",
+      side: s.side,
+      angle: s.angle,
+      ...(preview ? { preview } : {}),
+    });
+  }
+  return items;
 }
 
 export const bytesToDataUri = (bytes: Uint8Array) => {
