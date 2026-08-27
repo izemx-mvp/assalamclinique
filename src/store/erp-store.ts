@@ -269,8 +269,10 @@ export const useErp = create<State & Actions>((set, get) => ({
 
   entries: (profil, org, mode) => {
     const s = get();
-    const key = configKey(profil ?? s.selProfil, org ?? s.selOrg, mode ?? s.selMode);
-    return s.draft[key] ?? buildDefaultEntries(profil ?? s.selProfil, org ?? s.selOrg, mode ?? s.selMode);
+    const p = profil ?? s.selProfil;
+    const o = org ?? s.selOrg;
+    const m = mode ?? s.selMode;
+    return s.draft[configKey(p, o, m)] ?? baseEntries(p, o, m);
   },
 
   savedOrder: (profil, org, mode) => {
