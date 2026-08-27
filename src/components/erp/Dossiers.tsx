@@ -462,14 +462,20 @@ function Wizard({ onExit }: { onExit: () => void }) {
   const hasSide = (side: "recto" | "verso") =>
     st.scans.some((s) => s.pieceId === "cin_patient" && s.side === side);
 
+  /** Carte d'immatriculation CNSS officielle réellement importée et conforme. */
+  const carteCnssOk = st.scans.some(
+    (s) => s.pieceId === "carte_mutuelle" && isCarteMutuelleFile(s.fileName),
+  );
+
+  /** L'IA a détecté la concordance bénéficiaire = assuré sur la carte CNSS. */
+  const assureAuto = carteCnssOk && !st.scans.some((s) => s.pieceId === "cin_assure");
+
   const satisfied = (pieceId: string) => {
-    // La CIN assuré n'est validée qu'après import effectif d'un document.
     if (pieceId === "cin_patient") return hasSide("recto") && hasSide("verso");
-    // Règle stricte : la carte mutuelle exige un fichier nommé "carte mut…"
-    if (pieceId === "carte_mutuelle")
-      return st.scans.some(
-        (s) => s.pieceId === "carte_mutuelle" && isCarteMutuelleFile(s.fileName),
-      );
+    // Règle stricte : seuls les marqueurs officiels CNSS valident la carte mutuelle
+    if (pieceId === "carte_mutuelle") return carteCnssOk;
+    // Patient = assuré détecté par l'IA : la CIN assuré est couverte automatiquement
+    if (pieceId === "cin_assure" && carteCnssOk) return true;
     return st.scans.some((s) => s.pieceId === pieceId);
   };
 
@@ -821,7 +827,17 @@ function Wizard({ onExit }: { onExit: () => void }) {
                             {hasSide("verso") ? "✓" : "–"}
                           </p>
                         )}
+                        {id === "cin_assure" && assureAuto && (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            Patient = assuré détecté · couvert par CIN patient
+                          </p>
+                        )}
                       </div>
+                      {id === "cin_assure" && assureAuto && (
+                        <span className="shrink-0 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
+                          Auto
+                        </span>
+                      )}
                       {ok && <span className="text-sm text-success">✓</span>}
                     </div>
                   );
