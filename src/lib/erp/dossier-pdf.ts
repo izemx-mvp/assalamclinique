@@ -4,7 +4,7 @@ export const dossierFileName = (d: DossierRecord) =>
   `${d.mode === "PEC" ? "PEC" : "EXP"}_${d.org}_${d.num}.pdf`;
 
 /** Charge une image (blob url incluse) et la convertit en data URL exploitable par jsPDF. */
-async function toDataUrl(url: string): Promise<{ data: string; w: number; h: number } | null> {
+export async function toDataUrl(url: string): Promise<{ data: string; w: number; h: number } | null> {
   try {
     const img = await new Promise<HTMLImageElement>((res, rej) => {
       const el = new Image();
