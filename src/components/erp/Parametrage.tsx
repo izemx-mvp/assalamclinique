@@ -172,6 +172,55 @@ export function Parametrage() {
                   <th className="px-3 pb-1 font-medium">Statut</th>
                   <th className="px-3 pb-1 text-right font-medium">Actions</th>
                 </tr>
+                <tr>
+                  <th className="px-3 pb-2">
+                    <FilterInput
+                      value={filters.code}
+                      onChange={(v) => setFilter("code", v)}
+                      placeholder="ID…"
+                    />
+                  </th>
+                  <th className="px-3 pb-2">
+                    <FilterInput
+                      value={filters.name}
+                      onChange={(v) => setFilter("name", v)}
+                      placeholder="Nom…"
+                    />
+                  </th>
+                  <th className="px-3 pb-2">
+                    <FilterInput
+                      value={filters.specialite}
+                      onChange={(v) => setFilter("specialite", v)}
+                      placeholder="Spécialité…"
+                    />
+                  </th>
+                  <th className="px-3 pb-2" />
+                  <th className="px-3 pb-2">
+                    <FilterInput
+                      value={filters.createdBy}
+                      onChange={(v) => setFilter("createdBy", v)}
+                      placeholder="Créé par…"
+                    />
+                  </th>
+                  <th className="px-3 pb-2">
+                    <select
+                      value={filters.statut}
+                      onChange={(e) => setFilter("statut", e.target.value)}
+                      className="glass-soft h-8 w-full rounded-lg px-2 text-[11px] font-normal text-foreground normal-case outline-none"
+                    >
+                      <option value="" className="bg-popover">
+                        Tous
+                      </option>
+                      <option value="actives" className="bg-popover">
+                        Activées
+                      </option>
+                      <option value="inactives" className="bg-popover">
+                        Désactivées
+                      </option>
+                    </select>
+                  </th>
+                  <th className="px-3 pb-2" />
+                </tr>
               </thead>
               <tbody>
                 {pagedInterventions.map((i) => (
