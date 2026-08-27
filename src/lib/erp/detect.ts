@@ -20,18 +20,29 @@ const CNSS_MARKERS: RegExp[] = [
   /immatriculation\s*n[°o]?\s*\d{6,}/i,
   /\b1234567890\b/i,
   /c\.?\s*i\.?\s*n\.?\s*[-_ ]*AB\s*123456/i,
-  /^carte\s*mutuelle\s*\.(jpg|jpeg|png|pdf)$/i,
+  /\bcarte\s*mut(uelle)?\b/i,
 ];
 
+/**
+ * Normalise le nom de fichier : les séparateurs techniques (_ - . +) deviennent
+ * des espaces afin que « Carte_mutuelle.jpg » soit reconnu comme « carte mutuelle ».
+ */
+const normalize = (name: string) =>
+  name
+    .replace(/\.[a-z0-9]+$/i, " ")
+    .replace(/[_\-.+]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 /** Le fichier ressemble-t-il à une carte mutuelle (aiguillage souple) ? */
-export const looksLikeCarteMutuelle = (name: string) => CARTE_MUT_RE.test(name);
+export const looksLikeCarteMutuelle = (name: string) => CARTE_MUT_RE.test(normalize(name));
 
 /** Validation stricte : Carte d'immatriculation CNSS officielle uniquement. */
 export const isCarteMutuelleFile = (name: string) =>
-  CNSS_MARKERS.some((re) => re.test(name.trim()));
+  CNSS_MARKERS.some((re) => re.test(normalize(name)));
 
 export function detectFromName(name: string): Detection {
-  const n = name.toLowerCase();
+  const n = normalize(name).toLowerCase();
   const base = { pieceId: null as string | null, side: null as "recto" | "verso" | null, needsSide: false, angle: 0 };
 
   if (/cin|identite|identité/.test(n)) {
