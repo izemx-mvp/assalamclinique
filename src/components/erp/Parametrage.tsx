@@ -60,10 +60,30 @@ export function Parametrage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
-  const orderedInterventions = useMemo(
-    () => [...st.interventions].reverse(),
-    [st.interventions],
-  );
+  const [filters, setFilters] = useState({
+    code: "",
+    name: "",
+    specialite: "",
+    createdBy: "",
+    statut: "",
+  });
+  const setFilter = (k: keyof typeof filters, v: string) => {
+    setFilters((f) => ({ ...f, [k]: v }));
+    setPage(1);
+  };
+
+  const orderedInterventions = useMemo(() => {
+    const has = (v: string, q: string) => v.toLowerCase().includes(q.trim().toLowerCase());
+    return [...st.interventions].reverse().filter(
+      (i) =>
+        has(i.code, filters.code) &&
+        has(i.name, filters.name) &&
+        has(i.specialite, filters.specialite) &&
+        has(i.createdBy, filters.createdBy) &&
+        (filters.statut === "" ||
+          (filters.statut === "actives" ? i.active : !i.active)),
+    );
+  }, [st.interventions, filters]);
   const pages = Math.max(1, Math.ceil(orderedInterventions.length / pageSize));
   const safePage = Math.min(page, pages);
   const pagedInterventions = orderedInterventions.slice(
