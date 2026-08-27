@@ -40,7 +40,7 @@ import {
   downloadDataUri,
 } from "@/lib/erp/dossier-pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
-import { Pagination, Panel, Segmented } from "./ui-bits";
+import { FilterInput, Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
 const PATIENT = {
