@@ -32,6 +32,18 @@ export type Intervention = {
   active: boolean;
 };
 
+/** Instantané persistable d'une pièce compilée dans un dossier. */
+export type DossierItem = {
+  order: number;
+  fileName: string;
+  mime: string;
+  label: string;
+  side: "recto" | "verso" | null;
+  angle: number;
+  /** Aperçu (data URL) pour les pièces image. */
+  preview?: string;
+};
+
 export type DossierRecord = {
   id: string;
   num: string;
