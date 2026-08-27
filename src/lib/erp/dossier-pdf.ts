@@ -1,4 +1,4 @@
-import type { DossierRecord, Scan } from "@/store/erp-store";
+import type { DossierItem, DossierRecord, Scan } from "@/store/erp-store";
 
 export const dossierFileName = (d: DossierRecord) =>
   `${d.mode === "PEC" ? "PEC" : "EXP"}_${d.org}_${d.num}.pdf`;
