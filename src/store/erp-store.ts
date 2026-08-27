@@ -336,14 +336,12 @@ export const useErp = create<State & Actions>((set, get) => ({
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
       const cur = [...(s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode))];
-      const actives = cur.filter((e) => e.active);
-      const i = actives.findIndex((e) => e.pieceId === pieceId);
+      const i = cur.findIndex((e) => e.pieceId === pieceId);
       const j = i + dir;
-      if (i < 0 || j < 0 || j >= actives.length) return {};
-      [actives[i], actives[j]] = [actives[j]!, actives[i]!];
-      const inactives = cur.filter((e) => !e.active);
+      if (i < 0 || j < 0 || j >= cur.length) return {};
+      [cur[i], cur[j]] = [cur[j]!, cur[i]!];
       return {
-        draft: { ...s.draft, [key]: [...actives, ...inactives] },
+        draft: { ...s.draft, [key]: cur },
         dirty: { ...s.dirty, [key]: true },
       };
     }),
@@ -352,15 +350,13 @@ export const useErp = create<State & Actions>((set, get) => ({
     set((s) => {
       const key = configKey(s.selProfil, s.selOrg, s.selMode);
       const cur = [...(s.draft[key] ?? baseEntries(s.selProfil, s.selOrg, s.selMode))];
-      const actives = cur.filter((e) => e.active);
-      const from = actives.findIndex((e) => e.pieceId === fromId);
-      const to = actives.findIndex((e) => e.pieceId === toId);
+      const from = cur.findIndex((e) => e.pieceId === fromId);
+      const to = cur.findIndex((e) => e.pieceId === toId);
       if (from < 0 || to < 0 || from === to) return {};
-      const [moved] = actives.splice(from, 1);
-      actives.splice(to, 0, moved!);
-      const inactives = cur.filter((e) => !e.active);
+      const [moved] = cur.splice(from, 1);
+      cur.splice(to, 0, moved!);
       return {
-        draft: { ...s.draft, [key]: [...actives, ...inactives] },
+        draft: { ...s.draft, [key]: cur },
         dirty: { ...s.dirty, [key]: true },
       };
     }),
