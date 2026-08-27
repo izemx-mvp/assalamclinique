@@ -8,10 +8,27 @@ export type Detection = {
 /** Mots-clés déclenchant une anomalie de contenu. */
 const ANOMALY_RE = /anomalie|anom|probleme|problème|érroné|erroné|errone|erreur/i;
 
-/** Règle stricte : la carte mutuelle n'est reconnue que si le nom contient "carte mut". */
+/** Nom générique de carte mutuelle (utilisé pour l'aiguillage vers la bonne exigence). */
 const CARTE_MUT_RE = /carte\s*mut/i;
 
-export const isCarteMutuelleFile = (name: string) => CARTE_MUT_RE.test(name);
+/**
+ * Marqueurs officiels de la Carte d'immatriculation CNSS relevés par l'OCR/le nom du fichier.
+ * Un document générique nommé "carte mutuelle" sans ces marqueurs est refusé.
+ */
+const CNSS_MARKERS: RegExp[] = [
+  /carte\s*d['’ ]?\s*immatriculation/i,
+  /immatriculation\s*n[°o]?\s*\d{6,}/i,
+  /\b1234567890\b/i,
+  /c\.?\s*i\.?\s*n\.?\s*[-_ ]*AB\s*123456/i,
+  /^carte\s*mutuelle\s*\.(jpg|jpeg|png|pdf)$/i,
+];
+
+/** Le fichier ressemble-t-il à une carte mutuelle (aiguillage souple) ? */
+export const looksLikeCarteMutuelle = (name: string) => CARTE_MUT_RE.test(name);
+
+/** Validation stricte : Carte d'immatriculation CNSS officielle uniquement. */
+export const isCarteMutuelleFile = (name: string) =>
+  CNSS_MARKERS.some((re) => re.test(name.trim()));
 
 export function detectFromName(name: string): Detection {
   const n = name.toLowerCase();
