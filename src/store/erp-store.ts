@@ -512,7 +512,9 @@ export const useErp = create<State & Actions>((set, get) => ({
       ];
       persistDossiers(dossiers);
       return { dossiers };
-    }),
+    });
+    return newId;
+  },
 }));
 
 // Synchronisation temps réel du paramétrage entre les deux sous-modules.
