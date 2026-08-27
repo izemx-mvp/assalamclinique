@@ -43,11 +43,6 @@ import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
-const PATIENT = {
-  code: "CLINI-001",
-  nom: "Ouassim BEN MASSAOUD",
-  cin: "S774138",
-};
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
