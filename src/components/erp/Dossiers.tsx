@@ -243,6 +243,65 @@ export function Dossiers() {
                 <th className="px-3 pb-1 font-medium">Statut</th>
                 <th className="px-3 pb-1 text-right font-medium">Actions</th>
               </tr>
+              <tr>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.num}
+                    onChange={(v) => setFilter("num", v)}
+                    placeholder="N° dossier…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.patient}
+                    onChange={(v) => setFilter("patient", v)}
+                    placeholder="Patient…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.intervention}
+                    onChange={(v) => setFilter("intervention", v)}
+                    placeholder="Intervention…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.org}
+                    onChange={(v) => setFilter("org", v)}
+                    placeholder="Organisme…"
+                  />
+                </th>
+                <th className="px-3 pb-2" />
+                <th className="px-3 pb-2">
+                  <FilterInput
+                    value={filters.createdBy}
+                    onChange={(v) => setFilter("createdBy", v)}
+                    placeholder="Créé par…"
+                  />
+                </th>
+                <th className="px-3 pb-2">
+                  <select
+                    value={filters.statut}
+                    onChange={(e) => setFilter("statut", e.target.value)}
+                    className="glass-soft h-8 w-full rounded-lg px-2 text-[11px] font-normal text-foreground normal-case outline-none"
+                  >
+                    <option value="" className="bg-popover">
+                      Tous
+                    </option>
+                    <option value="Brouillon" className="bg-popover">
+                      Brouillon
+                    </option>
+                    <option value="Audité" className="bg-popover">
+                      Audité
+                    </option>
+                    <option value="Transmis" className="bg-popover">
+                      Transmis
+                    </option>
+                  </select>
+                </th>
+                <th className="px-3 pb-2" />
+              </tr>
             </thead>
             <tbody>
               {paged.map((d) => (
