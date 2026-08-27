@@ -122,6 +122,35 @@ export async function compileDossierBytes(scans: Scan[], meta: CompileMeta): Pro
   return await pdf.save();
 }
 
+/**
+ * Photographie l'état exact des scans importés (ordre 1..N, aperçus persistables)
+ * afin de pouvoir rejouer le dossier depuis l'historique après rechargement.
+ */
+export async function buildDossierItems(
+  scans: Scan[],
+  labels: Record<string, string>,
+): Promise<DossierItem[]> {
+  const items: DossierItem[] = [];
+  for (let i = 0; i < scans.length; i++) {
+    const s = scans[i]!;
+    let preview: string | undefined;
+    if (s.mime.startsWith("image/")) {
+      const img = await toDataUrl(s.url);
+      if (img) preview = img.data;
+    }
+    items.push({
+      order: i + 1,
+      fileName: s.fileName,
+      mime: s.mime,
+      label: s.pieceId ? (labels[s.pieceId] ?? s.pieceId) : "Non classé",
+      side: s.side,
+      angle: s.angle,
+      ...(preview ? { preview } : {}),
+    });
+  }
+  return items;
+}
+
 export const bytesToDataUri = (bytes: Uint8Array) => {
   let bin = "";
   const chunk = 0x8000;
