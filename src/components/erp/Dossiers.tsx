@@ -614,7 +614,9 @@ function Wizard({ onExit }: { onExit: () => void }) {
     const dataUri = bytesToDataUri(bytes);
     setCompiled(dataUri);
     st.setGenerated(pdfName);
-    st.commitDossier("Audité", dataUri);
+    // Insertion dans l'historique avec les données extraites des documents
+    setDossierId(dossierId ?? st.commitDossier("Audité", dataUri));
+    if (dossierId) st.updateDossier(dossierId, { statut: "Audité", pdfData: dataUri });
     toast.dismiss("compile");
     toast.success(`Dossier généré : ${pdfName}`);
   };
