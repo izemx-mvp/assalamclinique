@@ -1026,6 +1026,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
               disabled={!st.generated || st.transmitted}
               onClick={() => {
                 st.setTransmitted(true);
+                if (dossierId) st.updateDossier(dossierId, { statut: "Transmis" });
                 toast.success(
                   st.dosMode === "PEC"
                     ? "Dossier transmis à la PEC"
