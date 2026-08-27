@@ -166,6 +166,8 @@ export function Dossiers() {
   // Génère le PDF du dossier sélectionné pour le visualiseur
   useEffect(() => {
     let revoked: string | null = null;
+    setPieceIndex(0);
+    setViewerTab("pdf");
     if (detail) {
       dossierPdfUrl(detail, names[detail.interventionId] ?? "—", orgLabel(detail.org)).then((u) => {
         revoked = u;
