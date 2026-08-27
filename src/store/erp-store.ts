@@ -109,6 +109,14 @@ type Actions = {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/**
+ * Référentiel affiché : uniquement les pièces obligatoires du triplet,
+ * toutes actives au départ. Désactiver une pièce la laisse dans la liste.
+ */
+function baseEntries(profil: string, org: string, mode: Mode): Entry[] {
+  return buildDefaultEntries(profil, org, mode).filter((e) => e.active);
+}
+
 const AUTHORS = ["Dr. Alami", "Yassine E.", "Admin SI", "Dr. Bennani"];
 
 const INITIAL_INTERVENTIONS: Intervention[] = INTERVENTIONS_SEED.map((p, i) => ({
