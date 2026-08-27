@@ -483,13 +483,21 @@ export const useErp = create<State & Actions>((set, get) => ({
       return { dossiers };
     }),
 
-  commitDossier: (statut, pdfData) =>
+  updateDossier: (id, patch) =>
+    set((st) => {
+      const dossiers = st.dossiers.map((d) => (d.id === id ? { ...d, ...patch } : d));
+      persistDossiers(dossiers);
+      return { dossiers };
+    }),
+
+  commitDossier: (statut, pdfData) => {
+    const newId = uid();
     set((st) => {
       const num = `DOS-2026-${String(st.dossiers.length + 1).padStart(4, "0")}`;
       const dossiers: DossierRecord[] = [
         ...st.dossiers,
         {
-          id: uid(),
+          id: newId,
           num,
           patient: "Ouassim BEN MASSAOUD",
           interventionId: st.dosProfil,
