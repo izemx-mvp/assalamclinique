@@ -203,7 +203,7 @@ function loadDossiers(): DossierRecord[] {
 }
 
 /** Persistance locale du paramétrage partagé (interventions + matrices de pièces). */
-const CONFIG_KEY = "assalam-erp-config";
+const CONFIG_KEY = "assalam-erp-config-v2";
 
 type ConfigSnapshot = {
   interventions: Intervention[];
