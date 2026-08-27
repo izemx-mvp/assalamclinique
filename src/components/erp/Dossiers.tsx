@@ -463,7 +463,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
     st.scans.some((s) => s.pieceId === "cin_patient" && s.side === side);
 
   const satisfied = (pieceId: string) => {
-    if (pieceId === "cin_assure") return true;
+    // La CIN assuré n'est validée qu'après import effectif d'un document.
     if (pieceId === "cin_patient") return hasSide("recto") && hasSide("verso");
     // Règle stricte : la carte mutuelle exige un fichier nommé "carte mut…"
     if (pieceId === "carte_mutuelle")
