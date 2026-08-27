@@ -391,21 +391,94 @@ export function Dossiers() {
                   <Download className="size-3.5" /> Télécharger
                 </Button>
               )}
+              {!!detail?.items?.length && (
+                <span className="inline-flex gap-1">
+                  <Button
+                    size="sm"
+                    variant={viewerTab === "pdf" ? "default" : "ghost"}
+                    className="rounded-lg"
+                    onClick={() => setViewerTab("pdf")}
+                  >
+                    PDF compilé
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewerTab === "pieces" ? "default" : "ghost"}
+                    className="rounded-lg"
+                    onClick={() => setViewerTab("pieces")}
+                  >
+                    Pièces ({detail.items.length})
+                  </Button>
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
-          <div className="glass-soft h-[70vh] overflow-hidden rounded-xl">
-            {viewerUrl ? (
-              <iframe
-                src={viewerUrl}
-                title={`Dossier ${detail?.num}`}
-                className="h-full w-full rounded-xl border-0"
-              />
-            ) : (
-              <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                Compilation du document…
+          {viewerTab === "pieces" && detail?.items?.length ? (
+            <div className="flex flex-col gap-3">
+              <div className="glass-soft grid h-[62vh] place-items-center overflow-hidden rounded-xl p-3">
+                {(() => {
+                  const idx = Math.min(pieceIndex, detail.items.length - 1);
+                  const it = detail.items[idx]!;
+                  return it.preview ? (
+                    <img
+                      src={it.preview}
+                      alt={`${it.order}. ${it.label}`}
+                      className="max-h-full max-w-full rounded-lg object-contain"
+                      style={{ transform: `rotate(${it.angle}deg)` }}
+                    />
+                  ) : (
+                    <div className="text-center text-sm text-muted-foreground">
+                      <p className="font-medium text-foreground">{it.fileName}</p>
+                      <p>Document joint (aperçu image indisponible)</p>
+                    </div>
+                  );
+                })()}
               </div>
-            )}
-          </div>
+              <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="rounded-lg"
+                  disabled={pieceIndex <= 0}
+                  onClick={() => setPieceIndex((i) => Math.max(0, i - 1))}
+                >
+                  Précédent
+                </Button>
+                <span>
+                  {Math.min(pieceIndex, detail.items.length - 1) + 1}/{detail.items.length} —{" "}
+                  {detail.items[Math.min(pieceIndex, detail.items.length - 1)]!.label}
+                  {detail.items[Math.min(pieceIndex, detail.items.length - 1)]!.side
+                    ? ` (${detail.items[Math.min(pieceIndex, detail.items.length - 1)]!.side})`
+                    : ""}
+                </span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="rounded-lg"
+                  disabled={pieceIndex >= detail.items.length - 1}
+                  onClick={() =>
+                    setPieceIndex((i) => Math.min((detail.items?.length ?? 1) - 1, i + 1))
+                  }
+                >
+                  Suivant
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="glass-soft h-[70vh] overflow-hidden rounded-xl">
+              {viewerUrl ? (
+                <iframe
+                  src={viewerUrl}
+                  title={`Dossier ${detail?.num}`}
+                  className="h-full w-full rounded-xl border-0"
+                />
+              ) : (
+                <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                  Compilation du document…
+                </div>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
