@@ -618,11 +618,20 @@ function Wizard({ onExit }: { onExit: () => void }) {
       labels,
     });
     const dataUri = bytesToDataUri(bytes);
+    const items = await buildDossierItems(ordered, labels);
     setCompiled(dataUri);
     st.setGenerated(pdfName);
-    // Insertion dans l'historique avec les données extraites des documents
-    setDossierId(dossierId ?? st.commitDossier("Audité", dataUri));
-    if (dossierId) st.updateDossier(dossierId, { statut: "Audité", pdfData: dataUri });
+    // Insertion (ou mise à jour) dans l'historique avec le PDF réel et ses pièces ordonnées
+    if (dossierId) {
+      st.updateDossier(dossierId, {
+        statut: "Audité",
+        pdfData: dataUri,
+        items,
+        pages: ordered.length,
+      });
+    } else {
+      setDossierId(st.commitDossier("Audité", dataUri, items));
+    }
     toast.dismiss("compile");
     toast.success(`Dossier généré : ${pdfName}`);
   };
