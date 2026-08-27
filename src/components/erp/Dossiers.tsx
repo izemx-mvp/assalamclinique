@@ -36,6 +36,7 @@ import {
   bytesToDataUri,
   compileDossierBytes,
   dossierFileName,
+  buildDossierItems,
   dossierPdfUrl,
   downloadDataUri,
 } from "@/lib/erp/dossier-pdf";
