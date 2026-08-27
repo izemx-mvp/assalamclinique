@@ -599,6 +599,7 @@ function Wizard({ onExit }: { onExit: () => void }) {
   const pdfName = `${st.dosMode === "PEC" ? "PEC" : "EXP"}_${st.dosOrg}_Ouassim-BEN-MASSAOUD_CLINI-01.pdf`;
 
   const [compiled, setCompiled] = useState<string | null>(null);
+  const [dossierId, setDossierId] = useState<string | null>(null);
 
   const generate = async () => {
     toast.loading("Compilation du dossier…", { id: "compile" });
