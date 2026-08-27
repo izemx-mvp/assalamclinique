@@ -102,7 +102,8 @@ type Actions = {
   setAuditRan: (v: boolean) => void;
   setGenerated: (v: string | null) => void;
   setTransmitted: (v: boolean) => void;
-  commitDossier: (statut: DossierRecord["statut"], pdfData?: string) => void;
+  commitDossier: (statut: DossierRecord["statut"], pdfData?: string) => string;
+  updateDossier: (id: string, patch: Partial<DossierRecord>) => void;
   removeDossier: (id: string) => void;
 };
 
