@@ -289,6 +289,10 @@ export function Parametrage() {
 
 function Referentiel({ interventionId }: { interventionId: string }) {
   const st = useErp();
+  // Les actions du store agissent sur la sélection courante : on la garde alignée.
+  useEffect(() => {
+    if (st.selProfil !== interventionId) st.setSel({ selProfil: interventionId });
+  }, [interventionId, st.selProfil]);
   // Toutes les pièces du référentiel restent visibles, même désactivées.
   const entries = useErp((s) => s.entries)(interventionId, st.selOrg, st.selMode);
   const dirty = useErp((s) => s.isDirty)(interventionId, st.selOrg, st.selMode);
