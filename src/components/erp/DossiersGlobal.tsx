@@ -490,6 +490,9 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const [orderFixed, setOrderFixed] = useState(false);
   const [resolutionName, setResolutionName] = useState<string | null>(null);
   const [resolvedActive, setResolvedActive] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [auditRuns, setAuditRuns] = useState(0);
+
 
   const globalRef = useRef<HTMLInputElement>(null);
   const pieceRef = useRef<HTMLInputElement>(null);
