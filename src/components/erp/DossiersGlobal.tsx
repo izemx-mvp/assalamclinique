@@ -505,17 +505,23 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     resolving.current = false;
     if (!file) return;
 
-    // Résolution par import global : seul le dossier complet de référence est accepté.
-    if (isResolution && !isDossierCompletFile(file.name)) {
-      toast.error(
-        "Dossier refusé : seul « Ouassim BEN MASSAOUD Dossier complet » rend le dossier conforme",
-      );
+    // Import correctif (étape 2) : strictement isolé de l'étape 1.
+    // Le fichier est toujours accepté ; sa conformité est évaluée au re-contrôle.
+    if (isResolution) {
+      setResolutionName(file.name);
+      setResolvedActive(false);
+      setAuditRan(false);
+      setLog([]);
+      setCompiled(null);
+      toast.success("Dossier importé — Veuillez relancer le contrôle");
       return;
     }
 
-    const sc = isResolution ? "complet" : detectScenario(file.name);
+    const sc = detectScenario(file.name);
     setScenario(sc);
     setGlobalName(file.name);
+    setResolutionName(null);
+    setResolvedActive(false);
     setNoteReplacement(null);
     setCarteOk(false);
     setOrderFixed(false);
@@ -590,6 +596,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   /* --- Conformité --- */
   const satisfied = (pieceId: string) => {
     if (!scenario) return false;
+    if (resolvedActive) return true;
     if (scenario === "manquant") {
       if (pieceId === "carte_mutuelle" || pieceId === "cin_assure") return carteOk;
       return true;
@@ -600,9 +607,11 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const missing = required.filter((id) => !satisfied(id));
   // CAS 4 : la conformité de la Note confidentielle n'est jugée qu'au re-contrôle.
   const anomalyActive =
-    scenario === "errone" && !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
+    !resolvedActive &&
+    scenario === "errone" &&
+    !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
   const anomalyPersistent = anomalyActive && noteReplacement !== null;
-  const orderIssue = scenario === "ordre" && !orderFixed;
+  const orderIssue = scenario === "ordre" && !orderFixed && !resolvedActive;
   const blocked = !scenario || missing.length > 0 || anomalyActive || orderIssue || !auditRan;
 
   const orderedExtras = [...extras].sort((a, b) => {
