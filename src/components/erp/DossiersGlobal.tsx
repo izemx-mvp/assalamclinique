@@ -955,13 +955,51 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
           {auditRan && (
             <Panel title="Résultats du contrôle">
               <div className="flex flex-col gap-2">
-                {missing.length === 0 && !anomalyActive && (
+                {missing.length === 0 && !anomalyActive && !orderIssue && (
                   <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
                     <CheckCircle2 className="size-4" />
                     {scenario === "ordre"
                       ? "Dossier réorganisé et conforme"
                       : "Dossier conforme — aucune anomalie détectée"}
                   </p>
+                )}
+
+                {orderIssue && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-3">
+                    <XCircle className="size-4 shrink-0 text-destructive" />
+                    <span className="min-w-0 flex-1 text-sm text-destructive">
+                      Anomalie détectée : L'ordre des pièces dans le fichier ne respecte pas le
+                      référentiel de l'intervention
+                    </span>
+                    <Button
+                      size="sm"
+                      className="rounded-lg"
+                      onClick={() => {
+                        setOrderFixed(true);
+                        setExtras((prev) =>
+                          [...prev].sort((a, b) => {
+                            const ia = a.pieceId ? required.indexOf(a.pieceId) : 999;
+                            const ib = b.pieceId ? required.indexOf(b.pieceId) : 999;
+                            return (ia < 0 ? 998 : ia) - (ib < 0 ? 998 : ib);
+                          }),
+                        );
+                        toast.success("Ordre corrigé selon la matrice — relancez le contrôle");
+                      }}
+                    >
+                      <RefreshCcw className="size-3.5" /> Corriger l'ordre automatiquement
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="rounded-lg"
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
+                    >
+                      <FileStack className="size-3.5" /> Importer le dossier global complet
+                    </Button>
+                  </div>
                 )}
 
                 {missing.length > 0 && (
