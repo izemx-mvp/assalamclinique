@@ -44,7 +44,7 @@ import {
   downloadDataUri,
   fetchReferenceDossierBytes,
 } from "@/lib/erp/dossier-pdf";
-import referenceAsset from "@/assets/dossier-reference.pdf.asset.json";
+import referenceAsset from "@/assets/dossier-reference.pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel } from "./ui-bits";
 import { PdfViewer } from "./PdfViewer";
@@ -769,7 +769,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     toast.loading("Compilation du dossier…", { id: "compile-global" });
     // Génération universelle : uniquement le dossier médical complet de référence,
     // sans concaténer les pièces de remplacement importées.
-    const reference = await fetchReferenceDossierBytes(referenceAsset.url);
+    const reference = await fetchReferenceDossierBytes(referenceAsset);
     const base = reference ?? globalBytes;
     if (!base) {
       toast.dismiss("compile-global");
