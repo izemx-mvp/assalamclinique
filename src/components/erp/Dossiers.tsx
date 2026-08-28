@@ -134,9 +134,11 @@ export function Dossiers() {
     patient: "",
     intervention: "",
     org: "",
+    mode: "",
     createdBy: "",
     statut: "",
   });
+
   const setFilter = (k: keyof typeof filters, v: string) => {
     setFilters((f) => ({ ...f, [k]: v }));
     setPage(1);
