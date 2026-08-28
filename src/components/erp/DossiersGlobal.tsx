@@ -897,28 +897,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
       {step === 1 && (
         <div className="flex flex-col gap-5">
-          {analyzing && (
-            <div className="glass flex items-center justify-center gap-3 rounded-2xl px-5 py-4 text-sm text-accent">
-              <Loader2 className="size-5 animate-spin" />
-              Analyse IA du document en cours…
-            </div>
-          )}
-
-          {!analyzing && scenario && (
-            <div className="glass flex flex-wrap items-center gap-2 rounded-2xl px-5 py-3 text-[11px]">
-              <span className="mr-1 tracking-wide text-muted-foreground uppercase">
-                Données extraites
-              </span>
-              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
-                Intervention : {interventionName}
-              </span>
-              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">Mode : PEC</span>
-              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
-                Organisme : {ORG}
-              </span>
-            </div>
-          )}
-
           <Panel title="Scanner et Importer">
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -946,57 +924,78 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
             </div>
           </Panel>
 
-          {!analyzing && scenario && (
-          <Panel
-            title={`Checklist des exigences (${required.length})`}
-            action={
-              <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                {required.filter((id) => satisfied(id)).length}/{required.length} conformes
-              </span>
-            }
-          >
-
-            <div className="flex flex-col gap-2.5">
-              {required.map((id, i) => {
-                const ok = satisfied(id);
-                const auto = id === "cin_assure" && carteOk && scenario === "manquant";
-                return (
-                  <div
-                    key={id}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-3",
-                      ok ? "border border-success/40 bg-success/10" : "glass-soft",
-                    )}
-                  >
-                    <span className="w-4 shrink-0 text-center text-[11px] text-muted-foreground">
-                      {i + 1}
-                    </span>
-                    {ok ? (
-                      <CheckCircle2 className="size-4 shrink-0 text-success" />
-                    ) : (
-                      <span className="size-4 shrink-0 rounded-full border border-muted-foreground/50" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className={cn("truncate text-sm", ok && "text-success")}>
-                        {labels[id] ?? id}
-                      </p>
-                      {auto && (
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          Patient = assuré détecté · couvert par CIN patient
-                        </p>
-                      )}
-                    </div>
-                    {auto && (
-                      <span className="shrink-0 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
-                        Auto
-                      </span>
-                    )}
-                    {ok && <span className="text-sm text-success">✓</span>}
-                  </div>
-                );
-              })}
+          {analyzing && (
+            <div className="glass flex items-center justify-center gap-3 rounded-2xl px-5 py-4 text-sm text-accent">
+              <Loader2 className="size-5 animate-spin" />
+              Analyse IA du document en cours…
             </div>
-          </Panel>
+          )}
+
+          {!analyzing && scenario && (
+            <div className="glass flex flex-wrap items-center gap-2 rounded-2xl px-5 py-3 text-[11px]">
+              <span className="mr-1 tracking-wide text-muted-foreground uppercase">
+                Données extraites
+              </span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
+                Intervention : {interventionName}
+              </span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">Mode : PEC</span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
+                Organisme : {ORG}
+              </span>
+            </div>
+          )}
+
+          {!analyzing && scenario && (
+            <Panel
+              title={`Checklist des exigences (${required.length})`}
+              action={
+                <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                  {required.filter((id) => satisfied(id)).length}/{required.length} conformes
+                </span>
+              }
+            >
+              <div className="flex flex-col gap-2.5">
+                {required.map((id, i) => {
+                  const ok = satisfied(id);
+                  const auto = id === "cin_assure" && carteOk && scenario === "manquant";
+                  return (
+                    <div
+                      key={id}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-3",
+                        ok ? "border border-success/40 bg-success/10" : "glass-soft",
+                      )}
+                    >
+                      <span className="w-4 shrink-0 text-center text-[11px] text-muted-foreground">
+                        {i + 1}
+                      </span>
+                      {ok ? (
+                        <CheckCircle2 className="size-4 shrink-0 text-success" />
+                      ) : (
+                        <span className="size-4 shrink-0 rounded-full border border-muted-foreground/50" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={cn("truncate text-sm", ok && "text-success")}>
+                          {labels[id] ?? id}
+                        </p>
+                        {auto && (
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            Patient = assuré détecté · couvert par CIN patient
+                          </p>
+                        )}
+                      </div>
+                      {auto && (
+                        <span className="shrink-0 rounded-md border border-success/40 bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
+                          Auto
+                        </span>
+                      )}
+                      {ok && <span className="text-sm text-success">✓</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
           )}
 
           <div className="flex justify-end">
@@ -1008,7 +1007,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
               Suivant
             </Button>
           </div>
-
         </div>
       )}
 
