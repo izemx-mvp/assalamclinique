@@ -647,9 +647,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
     if (scenario === "ordre") {
       plan.push({
-        label: "Réorganisation et placement strict selon l'ordre du référentiel",
-        detail: `${required.length} pièce(s) replacées selon la matrice ${ORG} / PEC`,
-        final: "success",
+        label: orderIssue
+          ? "Analyse de l'ordre des pièces"
+          : "Réorganisation et placement strict selon l'ordre du référentiel",
+        detail: orderIssue
+          ? "L'ordre des pièces dans le fichier ne respecte pas le référentiel de l'intervention"
+          : `${required.length} pièce(s) replacées selon la matrice ${ORG} / PEC`,
+        final: orderIssue ? "error" : "success",
       });
     }
 
