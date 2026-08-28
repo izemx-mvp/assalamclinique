@@ -29,7 +29,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ORGANISMES } from "@/lib/erp/catalog";
-import { detectFromName, detectScenario, isCarteMutuelleFile, type GlobalScenario } from "@/lib/erp/detect";
+import {
+  detectFromName,
+  detectScenario,
+  isCarteMutuelleFile,
+  isCleanNoteConfidentielle,
+  isDossierCompletFile,
+  type GlobalScenario,
+} from "@/lib/erp/detect";
 import {
   buildDossierItems,
   bytesToDataUri,
@@ -484,20 +491,34 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const [dossierId, setDossierId] = useState<string | null>(null);
   const [dossierNum, setDossierNum] = useState<string | null>(null);
   const [transmitted, setTransmitted] = useState(false);
+  const [orderFixed, setOrderFixed] = useState(false);
 
   const globalRef = useRef<HTMLInputElement>(null);
   const pieceRef = useRef<HTMLInputElement>(null);
   const pieceTarget = useRef<string | null>(null);
+  const resolving = useRef(false);
 
   /* --- Ingestion du dossier global --- */
   const ingestGlobal = async (files: FileList | null) => {
     const file = files?.[0];
+    const isResolution = resolving.current;
+    resolving.current = false;
     if (!file) return;
-    const sc = detectScenario(file.name);
+
+    // Résolution par import global : seul le dossier complet de référence est accepté.
+    if (isResolution && !isDossierCompletFile(file.name)) {
+      toast.error(
+        "Dossier refusé : seul « Ouassim BEN MASSAOUD Dossier complet » rend le dossier conforme",
+      );
+      return;
+    }
+
+    const sc = isResolution ? "complet" : detectScenario(file.name);
     setScenario(sc);
     setGlobalName(file.name);
     setNoteFixed(false);
     setCarteOk(false);
+    setOrderFixed(false);
     setAuditRan(false);
     setLog([]);
     setCompiled(null);
@@ -543,6 +564,12 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       toast.success("Carte CNSS validée — Patient = Assuré détecté");
     }
     if (pieceId === "note_conf") {
+      if (!isCleanNoteConfidentielle(file.name)) {
+        toast.error(
+          "Fichier refusé : seul un document nommé exactement « Note confidentielle » est accepté",
+        );
+        return;
+      }
       setNoteFixed(true);
       toast.success("Note confidentielle remplacée — relancez le contrôle");
     }
@@ -576,7 +603,8 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
   const missing = required.filter((id) => !satisfied(id));
   const anomalyActive = scenario === "errone" && !noteFixed;
-  const blocked = !scenario || missing.length > 0 || anomalyActive || !auditRan;
+  const orderIssue = scenario === "ordre" && !orderFixed;
+  const blocked = !scenario || missing.length > 0 || anomalyActive || orderIssue || !auditRan;
 
   const orderedExtras = [...extras].sort((a, b) => {
     const ia = a.pieceId ? required.indexOf(a.pieceId) : 999;
@@ -610,7 +638,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         label: "Redressement et rotation automatique",
         detail:
           scenario === "rotes"
-            ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 270°)"
+            ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 180°)"
             : "Demande de PEC pivotée à 270° dans le PDF final",
         final: "success",
       },
@@ -619,9 +647,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
     if (scenario === "ordre") {
       plan.push({
-        label: "Réorganisation et placement strict selon l'ordre du référentiel",
-        detail: `${required.length} pièce(s) replacées selon la matrice ${ORG} / PEC`,
-        final: "success",
+        label: orderIssue
+          ? "Analyse de l'ordre des pièces"
+          : "Réorganisation et placement strict selon l'ordre du référentiel",
+        detail: orderIssue
+          ? "L'ordre des pièces dans le fichier ne respecte pas le référentiel de l'intervention"
+          : `${required.length} pièce(s) replacées selon la matrice ${ORG} / PEC`,
+        final: orderIssue ? "error" : "success",
       });
     }
 
@@ -650,7 +682,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     }
     setAuditRan(true);
     setRunning(false);
-    if (missing.length === 0 && !anomalyActive)
+    if (missing.length === 0 && !anomalyActive && !orderIssue)
       toast.success(
         scenario === "ordre"
           ? "Dossier réorganisé et conforme"
@@ -675,7 +707,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         mode: "Prise en charge",
         labels,
       },
-      { rotateLast: scenario === "rotes" },
+      { rotateLast: scenario === "rotes", lastAngle: 180 },
     );
     const dataUri = bytesToDataUri(bytes);
     const items = await buildDossierItems(orderedExtras, labels);
@@ -699,7 +731,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     toast.dismiss("compile-global");
     toast.success(
       scenario === "rotes"
-        ? "Dossier compilé — 2 documents redressés à 270°"
+        ? "Dossier compilé — Demande de PEC 270° et dernier document 180°"
         : "Dossier compilé — Demande de PEC pivotée à 270°",
     );
   };
@@ -923,13 +955,51 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
           {auditRan && (
             <Panel title="Résultats du contrôle">
               <div className="flex flex-col gap-2">
-                {missing.length === 0 && !anomalyActive && (
+                {missing.length === 0 && !anomalyActive && !orderIssue && (
                   <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
                     <CheckCircle2 className="size-4" />
                     {scenario === "ordre"
                       ? "Dossier réorganisé et conforme"
                       : "Dossier conforme — aucune anomalie détectée"}
                   </p>
+                )}
+
+                {orderIssue && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-3">
+                    <XCircle className="size-4 shrink-0 text-destructive" />
+                    <span className="min-w-0 flex-1 text-sm text-destructive">
+                      Anomalie détectée : L'ordre des pièces dans le fichier ne respecte pas le
+                      référentiel de l'intervention
+                    </span>
+                    <Button
+                      size="sm"
+                      className="rounded-lg"
+                      onClick={() => {
+                        setOrderFixed(true);
+                        setExtras((prev) =>
+                          [...prev].sort((a, b) => {
+                            const ia = a.pieceId ? required.indexOf(a.pieceId) : 999;
+                            const ib = b.pieceId ? required.indexOf(b.pieceId) : 999;
+                            return (ia < 0 ? 998 : ia) - (ib < 0 ? 998 : ib);
+                          }),
+                        );
+                        toast.success("Ordre corrigé selon la matrice — relancez le contrôle");
+                      }}
+                    >
+                      <RefreshCcw className="size-3.5" /> Corriger l'ordre automatiquement
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="rounded-lg"
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
+                    >
+                      <FileStack className="size-3.5" /> Importer le dossier global complet
+                    </Button>
+                  </div>
                 )}
 
                 {missing.length > 0 && (
@@ -962,7 +1032,10 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                       size="sm"
                       variant="secondary"
                       className="rounded-lg"
-                      onClick={() => globalRef.current?.click()}
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
                     >
                       <FileStack className="size-3.5" /> Importer le dossier global complet
                     </Button>
@@ -990,14 +1063,17 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                       size="sm"
                       variant="secondary"
                       className="rounded-lg"
-                      onClick={() => globalRef.current?.click()}
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
                     >
                       <FileStack className="size-3.5" /> Importer le dossier global complet
                     </Button>
                   </div>
                 )}
 
-                {(missing.length > 0 || anomalyActive) && (
+                {(missing.length > 0 || anomalyActive || orderIssue) && (
                   <div className="mt-2 flex justify-center">
                     <Button variant="secondary" className="rounded-xl" onClick={runAudit}>
                       <RefreshCcw className="size-4" /> Relancer le contrôle
