@@ -618,7 +618,20 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
   const anomalyPersistent = anomalyActive && noteReplacement !== null;
   const orderIssue = scenario === "ordre" && !orderFixed && !resolvedActive;
-  const blocked = !scenario || missing.length > 0 || anomalyActive || orderIssue || !auditRan;
+  const rotationDetail =
+    scenario === "rotes"
+      ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 180°)"
+      : "Redressement automatique détecté sur 1 document (Demande de PEC: 270°)";
+  // CAS 5 : l'accès à l'étape finale exige un re-contrôle après redressement.
+  const rotationBlock = scenario === "rotes" && auditRuns < 2;
+  const blocked =
+    !scenario ||
+    missing.length > 0 ||
+    anomalyActive ||
+    orderIssue ||
+    rotationBlock ||
+    !auditRan;
+
 
   const orderedExtras = [...extras].sort((a, b) => {
     const ia = a.pieceId ? required.indexOf(a.pieceId) : 999;
