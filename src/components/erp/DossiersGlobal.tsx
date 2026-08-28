@@ -636,7 +636,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     const orderIssueNow = resolvedNow ? false : orderIssue;
 
     setRunning(true);
-    const plan: { label: string; detail: string; final: AuditStatus }[] = [
+    const plan: { label: string; detail: string; final: AuditStatus; badge?: string }[] = [
       {
         label: "Initialisation du moteur d'audit IA",
         detail: "Chargement des modèles de reconnaissance documentaire",
@@ -654,14 +654,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       },
       {
         label: "Redressement et rotation automatique",
-        detail:
-          scenario === "rotes"
-            ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 180°)"
-            : "Demande de PEC pivotée à 270° dans le PDF final",
-        final: "success",
+        detail: rotationDetail,
+        final: scenario === "complet" ? "success" : "warning",
+        badge: scenario === "complet" ? "Validé" : "Corrigé",
       },
 
     ];
+
 
     if (scenario === "ordre") {
       plan.push({
