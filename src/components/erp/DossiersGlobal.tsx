@@ -467,7 +467,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const defaultInterventionId = st.interventions.some((i) => i.id === INTERVENTION_ID)
     ? INTERVENTION_ID
     : (st.interventions[0]?.id ?? "");
-  const [interventionId, setInterventionId] = useState(defaultInterventionId);
+  const [interventionId] = useState(defaultInterventionId);
   const required = savedOrder(interventionId, ORG, "PEC");
   const labels = useMemo(
     () => Object.fromEntries(st.pieces.map((p) => [p.id, p.label])),
@@ -492,6 +492,8 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const [dossierNum, setDossierNum] = useState<string | null>(null);
   const [transmitted, setTransmitted] = useState(false);
   const [orderFixed, setOrderFixed] = useState(false);
+  const [resolutionName, setResolutionName] = useState<string | null>(null);
+  const [resolvedActive, setResolvedActive] = useState(false);
 
   const globalRef = useRef<HTMLInputElement>(null);
   const pieceRef = useRef<HTMLInputElement>(null);
@@ -505,17 +507,23 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     resolving.current = false;
     if (!file) return;
 
-    // Résolution par import global : seul le dossier complet de référence est accepté.
-    if (isResolution && !isDossierCompletFile(file.name)) {
-      toast.error(
-        "Dossier refusé : seul « Ouassim BEN MASSAOUD Dossier complet » rend le dossier conforme",
-      );
+    // Import correctif (étape 2) : strictement isolé de l'étape 1.
+    // Le fichier est toujours accepté ; sa conformité est évaluée au re-contrôle.
+    if (isResolution) {
+      setResolutionName(file.name);
+      setResolvedActive(false);
+      setAuditRan(false);
+      setLog([]);
+      setCompiled(null);
+      toast.success("Dossier importé — Veuillez relancer le contrôle");
       return;
     }
 
-    const sc = isResolution ? "complet" : detectScenario(file.name);
+    const sc = detectScenario(file.name);
     setScenario(sc);
     setGlobalName(file.name);
+    setResolutionName(null);
+    setResolvedActive(false);
     setNoteReplacement(null);
     setCarteOk(false);
     setOrderFixed(false);
@@ -590,6 +598,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   /* --- Conformité --- */
   const satisfied = (pieceId: string) => {
     if (!scenario) return false;
+    if (resolvedActive) return true;
     if (scenario === "manquant") {
       if (pieceId === "carte_mutuelle" || pieceId === "cin_assure") return carteOk;
       return true;
@@ -600,9 +609,11 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const missing = required.filter((id) => !satisfied(id));
   // CAS 4 : la conformité de la Note confidentielle n'est jugée qu'au re-contrôle.
   const anomalyActive =
-    scenario === "errone" && !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
+    !resolvedActive &&
+    scenario === "errone" &&
+    !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
   const anomalyPersistent = anomalyActive && noteReplacement !== null;
-  const orderIssue = scenario === "ordre" && !orderFixed;
+  const orderIssue = scenario === "ordre" && !orderFixed && !resolvedActive;
   const blocked = !scenario || missing.length > 0 || anomalyActive || orderIssue || !auditRan;
 
   const orderedExtras = [...extras].sort((a, b) => {
@@ -616,6 +627,18 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       toast.error("Importez d'abord le dossier global");
       return;
     }
+    // Évaluation différée du correctif importé à l'étape 2.
+    const resolvedNow =
+      resolvedActive ||
+      !!(resolutionName && isDossierCompletFile(resolutionName)) ||
+      !!(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
+    if (resolvedNow && !resolvedActive) setResolvedActive(true);
+
+    const missingNow = resolvedNow ? [] : missing;
+    const anomalyNow = resolvedNow ? false : anomalyActive;
+    const anomalyPersistentNow = anomalyNow && noteReplacement !== null;
+    const orderIssueNow = resolvedNow ? false : orderIssue;
+
     setRunning(true);
     const plan: { label: string; detail: string; final: AuditStatus }[] = [
       {
@@ -625,7 +648,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       },
       {
         label: "Éclatement du dossier global en pièces",
-        detail: globalName ?? "Dossier global",
+        detail: resolutionName ?? globalName ?? "Dossier global",
         final: "success",
       },
       {
@@ -646,33 +669,33 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
     if (scenario === "ordre") {
       plan.push({
-        label: orderIssue
+        label: orderIssueNow
           ? "Analyse de l'ordre des pièces"
           : "Réorganisation et placement strict selon l'ordre du référentiel",
-        detail: orderIssue
+        detail: orderIssueNow
           ? "L'ordre des pièces dans le fichier ne respecte pas le référentiel de l'intervention"
           : `${required.length} pièce(s) replacées selon la matrice ${ORG} / PEC`,
-        final: orderIssue ? "error" : "success",
+        final: orderIssueNow ? "error" : "success",
       });
     }
 
     plan.push({
       label: "Vérification des anomalies de contenu",
-      detail: anomalyActive
-        ? anomalyPersistent
+      detail: anomalyNow
+        ? anomalyPersistentNow
           ? "Anomalie persistante : Informations de la Note confidentielle non conformes"
           : "Note confidentielle — nom et prénom non conformes avec les pièces d'identité"
         : "Aucune anomalie détectée",
-      final: anomalyActive ? "error" : "success",
+      final: anomalyNow ? "error" : "success",
     });
 
     plan.push({
       label: "Conformité au référentiel de l'organisme",
       detail:
-        missing.length === 0
+        missingNow.length === 0
           ? `${required.length} pièce(s) requises présentes`
-          : `Documents manquants : ${missing.map((id) => labels[id] ?? id).join(", ")}`,
-      final: missing.length === 0 ? "success" : "warning",
+          : `Documents manquants : ${missingNow.map((id) => labels[id] ?? id).join(", ")}`,
+      final: missingNow.length === 0 ? "success" : "warning",
     });
 
     setLog(plan.map((p, i) => ({ id: i, label: p.label, detail: p.detail, status: "pending" })));
@@ -683,7 +706,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     }
     setAuditRan(true);
     setRunning(false);
-    if (missing.length === 0 && !anomalyActive && !orderIssue)
+    if (missingNow.length === 0 && !anomalyNow && !orderIssueNow)
       toast.success(
         scenario === "ordre"
           ? "Dossier réorganisé et conforme"
@@ -692,14 +715,16 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     else toast.warning("Points bloquants détectés");
   };
 
+
   const generate = async () => {
     toast.loading("Compilation du dossier…", { id: "compile-global" });
-    // Génération universelle : le dossier médical complet de référence est toujours compilé.
+    // Génération universelle : uniquement le dossier médical complet de référence,
+    // sans concaténer les pièces de remplacement importées.
     const reference = await fetchReferenceDossierBytes(referenceAsset.url);
     const base = reference ?? globalBytes;
     const bytes = await compileGlobalDossierBytes(
       base,
-      orderedExtras,
+      [],
       {
         title: `Dossier PEC ${ORG} — ${PATIENT}`,
         patient: PATIENT,
@@ -729,7 +754,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       setDossierNum(num);
     }
     toast.dismiss("compile-global");
-    toast.success("Dossier compilé — Demande de PEC pivotée à 270°");
+    toast.success("Dossier compilé");
   };
 
 
@@ -761,20 +786,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={interventionId}
-              onChange={(e) => setInterventionId(e.target.value)}
-              className="glass-soft h-10 min-w-[220px] rounded-xl px-3 text-xs text-foreground outline-none"
-            >
-              {st.interventions.map((i) => (
-                <option key={i.id} value={i.id} className="bg-popover">
-                  {i.name}
-                </option>
-              ))}
-            </select>
-
-          </div>
+        
         </div>
       </div>
 
