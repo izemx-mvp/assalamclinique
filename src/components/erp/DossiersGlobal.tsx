@@ -693,14 +693,24 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       final: missingNow.length === 0 ? "success" : "warning",
     });
 
-    setLog(plan.map((p, i) => ({ id: i, label: p.label, detail: p.detail, status: "pending" })));
+    setLog(
+      plan.map((p, i) => ({
+        id: i,
+        label: p.label,
+        detail: p.detail,
+        status: "pending" as AuditStatus,
+        badge: p.badge,
+      })),
+    );
     for (let i = 0; i < plan.length; i++) {
       setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: "running" } : s)));
       await new Promise((r) => setTimeout(r, 600));
       setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: plan[i]!.final } : s)));
     }
     setAuditRan(true);
+    setAuditRuns((n) => n + 1);
     setRunning(false);
+
     if (missingNow.length === 0 && !anomalyNow && !orderIssueNow)
       toast.success(
         scenario === "ordre"
