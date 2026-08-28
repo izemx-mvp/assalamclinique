@@ -707,7 +707,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         mode: "Prise en charge",
         labels,
       },
-      { rotateLast: scenario === "rotes" },
+      { rotateLast: scenario === "rotes", lastAngle: 180 },
     );
     const dataUri = bytesToDataUri(bytes);
     const items = await buildDossierItems(orderedExtras, labels);
