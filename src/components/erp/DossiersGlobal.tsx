@@ -1045,22 +1045,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
           {auditRan && (
             <Panel title="Résultats du contrôle">
               <div className="flex flex-col gap-2">
-                {(missing.length > 0 || anomalyActive || orderIssue) && (
-                  <div className="flex justify-start">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        resolving.current = true;
-                        globalRef.current?.click();
-                      }}
-                    >
-                      <FileStack className="size-3.5" /> Importer le dossier global complet
-                    </Button>
-                  </div>
-                )}
-
                 {missing.length === 0 && !anomalyActive && !orderIssue && (
                   <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
                     <CheckCircle2 className="size-4" />
@@ -1105,9 +1089,22 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                 )}
 
                 {missing.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-sm text-amber-400">
-                    <AlertTriangle className="size-4 shrink-0" />
-                    Documents manquants : {missing.map((id) => labels[id] ?? id).join(" et ")}
+                  <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-3">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-amber-400">
+                      <AlertTriangle className="size-4 shrink-0" />
+                      Documents manquants : {missing.map((id) => labels[id] ?? id).join(" et ")}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="shrink-0 rounded-lg"
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
+                    >
+                      <FileStack className="size-3.5" /> Importer le dossier global complet
+                    </Button>
                   </div>
                 )}
 
