@@ -638,7 +638,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         label: "Redressement et rotation automatique",
         detail:
           scenario === "rotes"
-            ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 270°)"
+            ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 180°)"
             : "Demande de PEC pivotée à 270° dans le PDF final",
         final: "success",
       },
