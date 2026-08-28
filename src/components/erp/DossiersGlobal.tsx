@@ -36,10 +36,13 @@ import {
   compileGlobalDossierBytes,
   dataUriToBlobUrl,
   downloadDataUri,
+  fetchReferenceDossierBytes,
 } from "@/lib/erp/dossier-pdf";
+import referenceAsset from "@/assets/dossier-reference.pdf.asset.json";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel } from "./ui-bits";
 import { cn } from "@/lib/utils";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
