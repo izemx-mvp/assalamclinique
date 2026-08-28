@@ -29,7 +29,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ORGANISMES } from "@/lib/erp/catalog";
-import { detectFromName, detectScenario, isCarteMutuelleFile, type GlobalScenario } from "@/lib/erp/detect";
+import {
+  detectFromName,
+  detectScenario,
+  isCarteMutuelleFile,
+  isCleanNoteConfidentielle,
+  isDossierCompletFile,
+  type GlobalScenario,
+} from "@/lib/erp/detect";
 import {
   buildDossierItems,
   bytesToDataUri,
