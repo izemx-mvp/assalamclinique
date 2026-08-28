@@ -66,7 +66,15 @@ const STEPS = [
 /* ---------------------------- Stepper d'audit ---------------------------- */
 
 type AuditStatus = "pending" | "running" | "success" | "warning" | "error";
-type AuditStep = { id: number; label: string; detail: string; status: AuditStatus };
+type AuditStep = {
+  id: number;
+  label: string;
+  detail: string;
+  status: AuditStatus;
+  badge?: string | undefined;
+};
+
+
 
 const AUDIT_STYLES: Record<AuditStatus, { box: string; badge: string; label: string }> = {
   success: {
@@ -114,7 +122,10 @@ function AuditStepCard({ step, index }: { step: AuditStep; index: number }) {
       <div className="flex flex-wrap items-center gap-3">
         <AuditStepIcon status={step.status} />
         <p className="min-w-0 flex-1 text-sm font-medium text-foreground">{step.label}</p>
-        <span className={cn("rounded-md border px-2 py-0.5 text-[10px]", s.badge)}>{s.label}</span>
+        <span className={cn("rounded-md border px-2 py-0.5 text-[10px]", s.badge)}>
+          {step.status === "pending" || step.status === "running" ? s.label : (step.badge ?? s.label)}
+        </span>
+
       </div>
       <p className="mt-1 pl-7 text-[11px] text-muted-foreground">{step.detail}</p>
     </li>
@@ -486,6 +497,9 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const [orderFixed, setOrderFixed] = useState(false);
   const [resolutionName, setResolutionName] = useState<string | null>(null);
   const [resolvedActive, setResolvedActive] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [auditRuns, setAuditRuns] = useState(0);
+
 
   const globalRef = useRef<HTMLInputElement>(null);
   const pieceRef = useRef<HTMLInputElement>(null);
@@ -520,8 +534,10 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     setCarteOk(false);
     setOrderFixed(false);
     setAuditRan(false);
+    setAuditRuns(0);
     setLog([]);
     setCompiled(null);
+    setAnalyzing(true);
     if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
       const buf = await file.arrayBuffer();
       setGlobalBytes(new Uint8Array(buf));
@@ -541,8 +557,11 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         },
       ]);
     }
-    toast.success(`Dossier global ingéré : ${file.name}`);
+    await new Promise((r) => setTimeout(r, 1600));
+    setAnalyzing(false);
+    toast.success(`Dossier global analysé : ${file.name}`);
   };
+
 
   /* --- Import d'une pièce seule --- */
   const ingestPiece = (files: FileList | null) => {
@@ -606,7 +625,20 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
   const anomalyPersistent = anomalyActive && noteReplacement !== null;
   const orderIssue = scenario === "ordre" && !orderFixed && !resolvedActive;
-  const blocked = !scenario || missing.length > 0 || anomalyActive || orderIssue || !auditRan;
+  const rotationDetail =
+    scenario === "rotes"
+      ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 180°)"
+      : "Redressement automatique détecté sur 1 document (Demande de PEC: 270°)";
+  // CAS 5 : l'accès à l'étape finale exige un re-contrôle après redressement.
+  const rotationBlock = scenario === "rotes" && auditRuns < 2;
+  const blocked =
+    !scenario ||
+    missing.length > 0 ||
+    anomalyActive ||
+    orderIssue ||
+    rotationBlock ||
+    !auditRan;
+
 
   const orderedExtras = [...extras].sort((a, b) => {
     const ia = a.pieceId ? required.indexOf(a.pieceId) : 999;
@@ -632,7 +664,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     const orderIssueNow = resolvedNow ? false : orderIssue;
 
     setRunning(true);
-    const plan: { label: string; detail: string; final: AuditStatus }[] = [
+    const plan: { label: string; detail: string; final: AuditStatus; badge?: string }[] = [
       {
         label: "Initialisation du moteur d'audit IA",
         detail: "Chargement des modèles de reconnaissance documentaire",
@@ -650,14 +682,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       },
       {
         label: "Redressement et rotation automatique",
-        detail:
-          scenario === "rotes"
-            ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 180°)"
-            : "Demande de PEC pivotée à 270° dans le PDF final",
-        final: "success",
+        detail: rotationDetail,
+        final: scenario === "complet" ? "success" : "warning",
+        badge: scenario === "complet" ? "Validé" : "Corrigé",
       },
 
     ];
+
 
     if (scenario === "ordre") {
       plan.push({
@@ -690,14 +721,24 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       final: missingNow.length === 0 ? "success" : "warning",
     });
 
-    setLog(plan.map((p, i) => ({ id: i, label: p.label, detail: p.detail, status: "pending" })));
+    setLog(
+      plan.map((p, i) => ({
+        id: i,
+        label: p.label,
+        detail: p.detail,
+        status: "pending" as AuditStatus,
+        badge: p.badge,
+      })),
+    );
     for (let i = 0; i < plan.length; i++) {
       setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: "running" } : s)));
       await new Promise((r) => setTimeout(r, 600));
       setLog((prev) => prev.map((s, j) => (j === i ? { ...s, status: plan[i]!.final } : s)));
     }
     setAuditRan(true);
+    setAuditRuns((n) => n + 1);
     setRunning(false);
+
     if (missingNow.length === 0 && !anomalyNow && !orderIssueNow)
       toast.success(
         scenario === "ordre"
@@ -840,6 +881,28 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
       {step === 1 && (
         <div className="flex flex-col gap-5">
+          {analyzing && (
+            <div className="glass flex items-center justify-center gap-3 rounded-2xl px-5 py-4 text-sm text-accent">
+              <Loader2 className="size-5 animate-spin" />
+              Analyse IA du document en cours…
+            </div>
+          )}
+
+          {!analyzing && scenario && (
+            <div className="glass flex flex-wrap items-center gap-2 rounded-2xl px-5 py-3 text-[11px]">
+              <span className="mr-1 tracking-wide text-muted-foreground uppercase">
+                Données extraites
+              </span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
+                Intervention : {interventionName}
+              </span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">Mode : PEC</span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
+                Organisme : {ORG}
+              </span>
+            </div>
+          )}
+
           <Panel title="Scanner et Importer">
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -867,6 +930,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
             </div>
           </Panel>
 
+          {!analyzing && scenario && (
           <Panel
             title={`Checklist des exigences (${required.length})`}
             action={
@@ -875,6 +939,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
               </span>
             }
           >
+
             <div className="flex flex-col gap-2.5">
               {required.map((id, i) => {
                 const ok = satisfied(id);
@@ -916,12 +981,18 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
               })}
             </div>
           </Panel>
+          )}
 
           <div className="flex justify-end">
-            <Button className="rounded-xl px-6" onClick={() => setStep(2)}>
+            <Button
+              className="rounded-xl px-6"
+              disabled={!scenario || analyzing}
+              onClick={() => setStep(2)}
+            >
               Suivant
             </Button>
           </div>
+
         </div>
       )}
 
@@ -960,12 +1031,35 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
           {auditRan && (
             <Panel title="Résultats du contrôle">
               <div className="flex flex-col gap-2">
+                {(missing.length > 0 || anomalyActive || orderIssue) && (
+                  <div className="flex justify-start">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="rounded-lg"
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
+                    >
+                      <FileStack className="size-3.5" /> Importer le dossier global complet
+                    </Button>
+                  </div>
+                )}
+
                 {missing.length === 0 && !anomalyActive && !orderIssue && (
                   <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
                     <CheckCircle2 className="size-4" />
                     {scenario === "ordre"
                       ? "Dossier réorganisé et conforme"
                       : "Dossier conforme — aucune anomalie détectée"}
+                  </p>
+                )}
+
+                {scenario !== "complet" && (
+                  <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
+                    <CheckCircle2 className="size-4 shrink-0" />
+                    {rotationDetail}
                   </p>
                 )}
 
@@ -992,17 +1086,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                       }}
                     >
                       <RefreshCcw className="size-3.5" /> Corriger l'ordre automatiquement
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        resolving.current = true;
-                        globalRef.current?.click();
-                      }}
-                    >
-                      <FileStack className="size-3.5" /> Importer le dossier global complet
                     </Button>
                   </div>
                 )}
@@ -1033,17 +1116,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                     >
                       <Upload className="size-3.5" /> Importer la pièce seule
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        resolving.current = true;
-                        globalRef.current?.click();
-                      }}
-                    >
-                      <FileStack className="size-3.5" /> Importer le dossier global complet
-                    </Button>
                   </div>
                 ))}
 
@@ -1065,21 +1137,12 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                     >
                       <RefreshCcw className="size-3.5" /> Remplacer la pièce
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        resolving.current = true;
-                        globalRef.current?.click();
-                      }}
-                    >
-                      <FileStack className="size-3.5" /> Importer le dossier global complet
-                    </Button>
                   </div>
                 )}
 
-                {(missing.length > 0 || anomalyActive || orderIssue) && (
+
+                {(missing.length > 0 || anomalyActive || orderIssue || rotationBlock) && (
+
                   <div className="mt-2 flex justify-center">
                     <Button variant="secondary" className="rounded-xl" onClick={runAudit}>
                       <RefreshCcw className="size-4" /> Relancer le contrôle
