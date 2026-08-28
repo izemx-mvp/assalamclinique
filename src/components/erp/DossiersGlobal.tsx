@@ -135,6 +135,7 @@ export function DossiersGlobal() {
     patient: "",
     intervention: "",
     org: "",
+    mode: "",
     createdBy: "",
     statut: "",
   });
@@ -144,6 +145,7 @@ export function DossiersGlobal() {
   };
   const has = (v: string, q: string) => v.toLowerCase().includes(q.trim().toLowerCase());
   const orgLabel = (id: string) => ORGANISMES.find((o) => o.id === id)?.label ?? id;
+  const modeOf = (d: DossierRecord) => d.mode ?? "PEC";
 
   const filtered = st.dossiers.filter(
     (d) =>
@@ -155,9 +157,11 @@ export function DossiersGlobal() {
       has(d.patient, filters.patient) &&
       has(names[d.interventionId] ?? "", filters.intervention) &&
       has(orgLabel(d.org), filters.org) &&
+      (filters.mode === "" || modeOf(d) === filters.mode) &&
       has(d.createdBy, filters.createdBy) &&
       (filters.statut === "" || d.statut === filters.statut),
   );
+
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pages);
