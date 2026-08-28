@@ -546,6 +546,8 @@ export const useErp = create<State & Actions>((set, get) => ({
           pages: st.scans.length,
           ...(pdfData ? { pdfData } : {}),
           ...(items ? { items } : {}),
+          ...(extra ?? {}),
+
         },
       ];
       persistDossiers(dossiers);
