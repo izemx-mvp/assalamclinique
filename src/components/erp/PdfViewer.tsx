@@ -72,9 +72,11 @@ export function PdfViewer({
           host.appendChild(canvas);
           await page.render({ canvasContext: ctx, viewport }).promise;
         }
-      } catch {
+      } catch (error) {
+        console.error("[PdfViewer] rendu impossible", error);
         if (!cancelled) setState("error");
       }
+
     })();
 
     return () => {
