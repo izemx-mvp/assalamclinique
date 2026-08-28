@@ -157,7 +157,9 @@ export function Dossiers() {
       has(d.patient, filters.patient) &&
       has(names[d.interventionId] ?? "", filters.intervention) &&
       has(ORGANISMES.find((o) => o.id === d.org)?.label ?? d.org, filters.org) &&
+      (filters.mode === "" || (d.mode ?? "PEC") === filters.mode) &&
       has(d.createdBy, filters.createdBy) &&
+
       (filters.statut === "" || d.statut === filters.statut),
   );
 
