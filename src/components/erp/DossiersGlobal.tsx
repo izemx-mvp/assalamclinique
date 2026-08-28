@@ -115,7 +115,10 @@ function AuditStepCard({ step, index }: { step: AuditStep; index: number }) {
       <div className="flex flex-wrap items-center gap-3">
         <AuditStepIcon status={step.status} />
         <p className="min-w-0 flex-1 text-sm font-medium text-foreground">{step.label}</p>
-        <span className={cn("rounded-md border px-2 py-0.5 text-[10px]", s.badge)}>{s.label}</span>
+        <span className={cn("rounded-md border px-2 py-0.5 text-[10px]", s.badge)}>
+          {step.status === "pending" || step.status === "running" ? s.label : (step.badge ?? s.label)}
+        </span>
+
       </div>
       <p className="mt-1 pl-7 text-[11px] text-muted-foreground">{step.detail}</p>
     </li>
