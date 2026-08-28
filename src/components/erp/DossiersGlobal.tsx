@@ -527,8 +527,10 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     setCarteOk(false);
     setOrderFixed(false);
     setAuditRan(false);
+    setAuditRuns(0);
     setLog([]);
     setCompiled(null);
+    setAnalyzing(true);
     if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
       const buf = await file.arrayBuffer();
       setGlobalBytes(new Uint8Array(buf));
@@ -548,8 +550,11 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         },
       ]);
     }
-    toast.success(`Dossier global ingéré : ${file.name}`);
+    await new Promise((r) => setTimeout(r, 1600));
+    setAnalyzing(false);
+    toast.success(`Dossier global analysé : ${file.name}`);
   };
+
 
   /* --- Import d'une pièce seule --- */
   const ingestPiece = (files: FileList | null) => {
