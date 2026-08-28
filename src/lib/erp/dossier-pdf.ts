@@ -37,69 +37,81 @@ export type CompileMeta = {
 /**
  * Compile le dossier complet en PDF réel.
  * Les pages de la « Demande de PEC » sont réellement pivotées à 270° dans le flux binaire du PDF.
+ * `opts.cover = false` produit un PDF strictement composé des pages des documents
+ * (aucune page de garde ni en-tête textuel ajouté par le système).
  */
-export async function compileDossierBytes(scans: Scan[], meta: CompileMeta): Promise<Uint8Array> {
+export async function compileDossierBytes(
+  scans: Scan[],
+  meta: CompileMeta,
+  opts: { cover?: boolean } = {},
+): Promise<Uint8Array> {
+  const withCover = opts.cover !== false;
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = 595.28;
   const H = 841.89;
 
-  // Page de garde
-  doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text("CLINIQUE ASSALAM — Dossier d'intervention", 40, 40);
-  doc.setDrawColor(200);
-  doc.line(40, 50, 555, 50);
-  doc.setFontSize(18);
-  doc.setTextColor(20);
-  doc.text(meta.title, 40, 100);
-  doc.setFontSize(11);
-  const rows: [string, string][] = [
-    ["Patient", meta.patient],
-    ["Intervention", meta.intervention],
-    ["Organisme", meta.organisme],
-    ["Mode", meta.mode],
-    ["Pages compilées", String(scans.length)],
-    ["Date de compilation", new Date().toLocaleString("fr-FR")],
-  ];
-  rows.forEach(([k, v], r) => {
-    const y = 140 + r * 24;
-    doc.setTextColor(130);
-    doc.text(k, 40, y);
-    doc.setTextColor(30);
-    doc.text(String(v), 220, y);
-  });
+  if (withCover) {
+    // Page de garde
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text("CLINIQUE ASSALAM — Dossier d'intervention", 40, 40);
+    doc.setDrawColor(200);
+    doc.line(40, 50, 555, 50);
+    doc.setFontSize(18);
+    doc.setTextColor(20);
+    doc.text(meta.title, 40, 100);
+    doc.setFontSize(11);
+    const rows: [string, string][] = [
+      ["Patient", meta.patient],
+      ["Intervention", meta.intervention],
+      ["Organisme", meta.organisme],
+      ["Mode", meta.mode],
+      ["Pages compilées", String(scans.length)],
+      ["Date de compilation", new Date().toLocaleString("fr-FR")],
+    ];
+    rows.forEach(([k, v], r) => {
+      const y = 140 + r * 24;
+      doc.setTextColor(130);
+      doc.text(k, 40, y);
+      doc.setTextColor(30);
+      doc.text(String(v), 220, y);
+    });
+  }
 
-  // Index (base 1 car la page 1 est la page de garde) des pages à pivoter réellement
+  // Index 0-based (pdf-lib) des pages à pivoter réellement
   const rotate270: number[] = [];
 
   for (let i = 0; i < scans.length; i++) {
     const s = scans[i]!;
-    doc.addPage();
-    const pageIndex = i + 1; // 0-based dans pdf-lib
+    if (withCover || i > 0) doc.addPage();
+    const pageIndex = withCover ? i + 1 : i;
     if (s.pieceId === "demande_pec" || s.angle === 270) rotate270.push(pageIndex);
 
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    const label = s.pieceId ? (meta.labels[s.pieceId] ?? s.pieceId) : "Non classé";
-    doc.text(`${i + 1}. ${label}${s.side ? ` (${s.side})` : ""}`, 40, 40);
-    doc.setDrawColor(210);
-    doc.line(40, 50, 555, 50);
+    const top = withCover ? 70 : 24;
+    if (withCover) {
+      doc.setFontSize(10);
+      doc.setTextColor(120);
+      const label = s.pieceId ? (meta.labels[s.pieceId] ?? s.pieceId) : "Non classé";
+      doc.text(`${i + 1}. ${label}${s.side ? ` (${s.side})` : ""}`, 40, 40);
+      doc.setDrawColor(210);
+      doc.line(40, 50, 555, 50);
+    }
 
     if (s.mime.startsWith("image/")) {
       const img = await toDataUrl(s.url);
       if (img) {
-        const maxW = W - 80;
-        const maxH = H - 120;
+        const maxW = W - (withCover ? 80 : 48);
+        const maxH = H - (withCover ? 120 : 48);
         const ratio = Math.min(maxW / img.w, maxH / img.h);
         const w = img.w * ratio;
         const h = img.h * ratio;
-        doc.addImage(img.data, "JPEG", (W - w) / 2, 70, w, h, undefined, "FAST");
-      } else {
+        doc.addImage(img.data, "JPEG", (W - w) / 2, top, w, h, undefined, "FAST");
+      } else if (withCover) {
         doc.setTextColor(40);
         doc.text(s.fileName, 40, 90);
       }
-    } else {
+    } else if (withCover) {
       doc.setTextColor(40);
       doc.setFontSize(12);
       doc.text(s.fileName, 40, 90);
@@ -110,6 +122,7 @@ export async function compileDossierBytes(scans: Scan[], meta: CompileMeta): Pro
       doc.text("Document joint (non image)", W / 2, H / 2, { align: "center" });
     }
   }
+
 
   const bytes = new Uint8Array(doc.output("arraybuffer") as ArrayBuffer);
   if (!rotate270.length) return bytes;
@@ -151,16 +164,28 @@ export async function buildDossierItems(
   return items;
 }
 
+/** Charge le dossier PDF de référence (Ouassim BEN MASSAOUD) depuis le CDN. */
+export async function fetchReferenceDossierBytes(url: string): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return new Uint8Array(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Compilation du sous-module « ingestion de dossier global » :
- * les pages du PDF global sont réellement reprises (la 1ère page — Demande de PEC —
- * est pivotée à 270° dans le flux binaire), puis les pièces importées séparément
- * sont ajoutées à la suite dans l'ordre du référentiel.
+ * Compilation du sous-module « ingestion de dossier global ».
+ * Le PDF final ne contient QUE les pages réelles des documents (aucune page de garde) :
+ * la 1ère page (Demande de PEC) est pivotée à 270° dans le flux binaire, et,
+ * si `rotateLast`, la dernière page (Carte mutuelle) l'est également.
  */
 export async function compileGlobalDossierBytes(
   globalBytes: Uint8Array | null,
   extras: Scan[],
   meta: CompileMeta,
+  opts: { rotateLast?: boolean } = {},
 ): Promise<Uint8Array> {
   const { PDFDocument, degrees } = await import("pdf-lib");
   const out = await PDFDocument.create();
@@ -169,8 +194,10 @@ export async function compileGlobalDossierBytes(
     try {
       const src = await PDFDocument.load(globalBytes);
       const copied = await out.copyPages(src, src.getPageIndices());
+      const last = copied.length - 1;
       copied.forEach((p, i) => {
         if (i === 0) p.setRotation(degrees(270));
+        else if (opts.rotateLast && i === last) p.setRotation(degrees(270));
         out.addPage(p);
       });
     } catch {
@@ -179,15 +206,16 @@ export async function compileGlobalDossierBytes(
   }
 
   if (extras.length) {
-    const extraBytes = await compileDossierBytes(extras, meta);
+    const extraBytes = await compileDossierBytes(extras, meta, { cover: false });
     const src2 = await PDFDocument.load(extraBytes);
     const copied2 = await out.copyPages(src2, src2.getPageIndices());
     copied2.forEach((p) => out.addPage(p));
   }
 
-  if (out.getPageCount() === 0) return await compileDossierBytes(extras, meta);
+  if (out.getPageCount() === 0) return await compileDossierBytes(extras, meta, { cover: false });
   return await out.save();
 }
+
 
 export const bytesToDataUri = (bytes: Uint8Array) => {
 

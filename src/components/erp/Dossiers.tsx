@@ -134,9 +134,11 @@ export function Dossiers() {
     patient: "",
     intervention: "",
     org: "",
+    mode: "",
     createdBy: "",
     statut: "",
   });
+
   const setFilter = (k: keyof typeof filters, v: string) => {
     setFilters((f) => ({ ...f, [k]: v }));
     setPage(1);
@@ -155,7 +157,9 @@ export function Dossiers() {
       has(d.patient, filters.patient) &&
       has(names[d.interventionId] ?? "", filters.intervention) &&
       has(ORGANISMES.find((o) => o.id === d.org)?.label ?? d.org, filters.org) &&
+      (filters.mode === "" || (d.mode ?? "PEC") === filters.mode) &&
       has(d.createdBy, filters.createdBy) &&
+
       (filters.statut === "" || d.statut === filters.statut),
   );
 
@@ -240,7 +244,9 @@ export function Dossiers() {
                 <th className="px-3 pb-1 font-medium">Patient</th>
                 <th className="px-3 pb-1 font-medium">Intervention</th>
                 <th className="px-3 pb-1 font-medium">Organisme</th>
+                <th className="px-3 pb-1 font-medium">Mode</th>
                 <th className="px-3 pb-1 font-medium">Date de création</th>
+
                 <th className="px-3 pb-1 font-medium">Créé par</th>
                 <th className="px-3 pb-1 font-medium">Statut</th>
                 <th className="px-3 pb-1 text-right font-medium">Actions</th>
@@ -274,7 +280,25 @@ export function Dossiers() {
                     placeholder="Organisme…"
                   />
                 </th>
+                <th className="px-3 pb-2">
+                  <select
+                    value={filters.mode}
+                    onChange={(e) => setFilter("mode", e.target.value)}
+                    className="glass-soft h-8 w-full rounded-lg px-2 text-[11px] font-normal text-foreground normal-case outline-none"
+                  >
+                    <option value="" className="bg-popover">
+                      Tous
+                    </option>
+                    <option value="PEC" className="bg-popover">
+                      PEC
+                    </option>
+                    <option value="EXPEDITION" className="bg-popover">
+                      Expédition
+                    </option>
+                  </select>
+                </th>
                 <th className="px-3 pb-2" />
+
                 <th className="px-3 pb-2">
                   <FilterInput
                     value={filters.createdBy}
@@ -314,6 +338,12 @@ export function Dossiers() {
                     {names[d.interventionId] ?? "—"}
                   </td>
                   <td className="px-3 py-3 text-muted-foreground">{orgLabel(d.org)}</td>
+                  <td className="px-3 py-3">
+                    <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[11px] text-accent">
+                      {(d.mode ?? "PEC") === "EXPEDITION" ? "Expédition" : "PEC"}
+                    </span>
+                  </td>
+
                   <td className="px-3 py-3 text-muted-foreground">{d.createdAt}</td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdBy}</td>
                   <td className="px-3 py-3">
@@ -363,7 +393,7 @@ export function Dossiers() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                     Aucun dossier trouvé.
                   </td>
                 </tr>

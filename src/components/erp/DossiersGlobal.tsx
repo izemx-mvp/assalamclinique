@@ -36,10 +36,13 @@ import {
   compileGlobalDossierBytes,
   dataUriToBlobUrl,
   downloadDataUri,
+  fetchReferenceDossierBytes,
 } from "@/lib/erp/dossier-pdf";
+import referenceAsset from "@/assets/dossier-reference.pdf.asset.json";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel } from "./ui-bits";
 import { cn } from "@/lib/utils";
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -132,6 +135,7 @@ export function DossiersGlobal() {
     patient: "",
     intervention: "",
     org: "",
+    mode: "",
     createdBy: "",
     statut: "",
   });
@@ -141,6 +145,7 @@ export function DossiersGlobal() {
   };
   const has = (v: string, q: string) => v.toLowerCase().includes(q.trim().toLowerCase());
   const orgLabel = (id: string) => ORGANISMES.find((o) => o.id === id)?.label ?? id;
+  const modeOf = (d: DossierRecord) => d.mode ?? "PEC";
 
   const filtered = st.dossiers.filter(
     (d) =>
@@ -152,9 +157,11 @@ export function DossiersGlobal() {
       has(d.patient, filters.patient) &&
       has(names[d.interventionId] ?? "", filters.intervention) &&
       has(orgLabel(d.org), filters.org) &&
+      (filters.mode === "" || modeOf(d) === filters.mode) &&
       has(d.createdBy, filters.createdBy) &&
       (filters.statut === "" || d.statut === filters.statut),
   );
+
 
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pages);
@@ -218,7 +225,9 @@ export function DossiersGlobal() {
                 <th className="px-3 pb-1 font-medium">Patient</th>
                 <th className="px-3 pb-1 font-medium">Intervention</th>
                 <th className="px-3 pb-1 font-medium">Organisme</th>
+                <th className="px-3 pb-1 font-medium">Mode</th>
                 <th className="px-3 pb-1 font-medium">Date de création</th>
+
                 <th className="px-3 pb-1 font-medium">Créé par</th>
                 <th className="px-3 pb-1 font-medium">Statut</th>
                 <th className="px-3 pb-1 text-right font-medium">Actions</th>
@@ -252,7 +261,25 @@ export function DossiersGlobal() {
                     placeholder="Organisme…"
                   />
                 </th>
+                <th className="px-3 pb-2">
+                  <select
+                    value={filters.mode}
+                    onChange={(e) => setFilter("mode", e.target.value)}
+                    className="glass-soft h-8 w-full rounded-lg px-2 text-[11px] font-normal text-foreground normal-case outline-none"
+                  >
+                    <option value="" className="bg-popover">
+                      Tous
+                    </option>
+                    <option value="PEC" className="bg-popover">
+                      PEC
+                    </option>
+                    <option value="EXPEDITION" className="bg-popover">
+                      Expédition
+                    </option>
+                  </select>
+                </th>
                 <th className="px-3 pb-2" />
+
                 <th className="px-3 pb-2">
                   <FilterInput
                     value={filters.createdBy}
@@ -289,7 +316,13 @@ export function DossiersGlobal() {
                     {names[d.interventionId] ?? "—"}
                   </td>
                   <td className="px-3 py-3 text-muted-foreground">{orgLabel(d.org)}</td>
+                  <td className="px-3 py-3">
+                    <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[11px] text-accent">
+                      {modeOf(d) === "EXPEDITION" ? "Expédition" : "PEC"}
+                    </span>
+                  </td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdAt}</td>
+
                   <td className="px-3 py-3 text-muted-foreground">{d.createdBy}</td>
                   <td className="px-3 py-3">
                     <span
@@ -338,7 +371,7 @@ export function DossiersGlobal() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                     Aucun dossier trouvé.
                   </td>
                 </tr>
@@ -424,9 +457,10 @@ export function DossiersGlobal() {
 function GlobalWizard({ onExit }: { onExit: () => void }) {
   const st = useErp();
   const savedOrder = useErp((s) => s.savedOrder);
-  const interventionId = st.interventions.some((i) => i.id === INTERVENTION_ID)
+  const defaultInterventionId = st.interventions.some((i) => i.id === INTERVENTION_ID)
     ? INTERVENTION_ID
     : (st.interventions[0]?.id ?? "");
+  const [interventionId, setInterventionId] = useState(defaultInterventionId);
   const required = savedOrder(interventionId, ORG, "PEC");
   const labels = useMemo(
     () => Object.fromEntries(st.pieces.map((p) => [p.id, p.label])),
@@ -434,6 +468,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   );
   const interventionName =
     st.interventions.find((i) => i.id === interventionId)?.name ?? "Cholécystite";
+
 
   const [step, setStep] = useState(1);
   const [scenario, setScenario] = useState<GlobalScenario | null>(null);
@@ -573,9 +608,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       },
       {
         label: "Redressement et rotation automatique",
-        detail: "Demande de PEC pivotée à 270° dans le PDF final",
+        detail:
+          scenario === "rotes"
+            ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 270°)"
+            : "Demande de PEC pivotée à 270° dans le PDF final",
         final: "success",
       },
+
     ];
 
     if (scenario === "ordre") {
@@ -622,14 +661,22 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
   const generate = async () => {
     toast.loading("Compilation du dossier…", { id: "compile-global" });
-    const bytes = await compileGlobalDossierBytes(globalBytes, orderedExtras, {
-      title: `Dossier PEC ${ORG} — ${PATIENT}`,
-      patient: PATIENT,
-      intervention: interventionName,
-      organisme: ORG,
-      mode: "Prise en charge",
-      labels,
-    });
+    // Génération universelle : le dossier médical complet de référence est toujours compilé.
+    const reference = await fetchReferenceDossierBytes(referenceAsset.url);
+    const base = reference ?? globalBytes;
+    const bytes = await compileGlobalDossierBytes(
+      base,
+      orderedExtras,
+      {
+        title: `Dossier PEC ${ORG} — ${PATIENT}`,
+        patient: PATIENT,
+        intervention: interventionName,
+        organisme: ORG,
+        mode: "Prise en charge",
+        labels,
+      },
+      { rotateLast: scenario === "rotes" },
+    );
     const dataUri = bytesToDataUri(bytes);
     const items = await buildDossierItems(orderedExtras, labels);
     setCompiled(dataUri);
@@ -650,8 +697,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       setDossierNum(num);
     }
     toast.dismiss("compile-global");
-    toast.success("Dossier compilé — Demande de PEC pivotée à 270°");
+    toast.success(
+      scenario === "rotes"
+        ? "Dossier compilé — 2 documents redressés à 270°"
+        : "Dossier compilé — Demande de PEC pivotée à 270°",
+    );
   };
+
 
   const pdfName = `PEC_CNSS_Ouassim_BEN_MASSAOUD_${dossierNum ?? "DOS-2026-0000"}.pdf`;
 
@@ -682,10 +734,18 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="glass-soft rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              Mode PEC · {ORG}
-            </span>
-            <span className="glass-soft rounded-xl px-3 py-2 text-xs">{interventionName}</span>
+            <select
+              value={interventionId}
+              onChange={(e) => setInterventionId(e.target.value)}
+              className="glass-soft h-10 min-w-[220px] rounded-xl px-3 text-xs text-foreground outline-none"
+            >
+              {st.interventions.map((i) => (
+                <option key={i.id} value={i.id} className="bg-popover">
+                  {i.name}
+                </option>
+              ))}
+            </select>
+
           </div>
         </div>
       </div>
