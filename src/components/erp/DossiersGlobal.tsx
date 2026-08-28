@@ -491,20 +491,34 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const [dossierId, setDossierId] = useState<string | null>(null);
   const [dossierNum, setDossierNum] = useState<string | null>(null);
   const [transmitted, setTransmitted] = useState(false);
+  const [orderFixed, setOrderFixed] = useState(false);
 
   const globalRef = useRef<HTMLInputElement>(null);
   const pieceRef = useRef<HTMLInputElement>(null);
   const pieceTarget = useRef<string | null>(null);
+  const resolving = useRef(false);
 
   /* --- Ingestion du dossier global --- */
   const ingestGlobal = async (files: FileList | null) => {
     const file = files?.[0];
+    const isResolution = resolving.current;
+    resolving.current = false;
     if (!file) return;
-    const sc = detectScenario(file.name);
+
+    // Résolution par import global : seul le dossier complet de référence est accepté.
+    if (isResolution && !isDossierCompletFile(file.name)) {
+      toast.error(
+        "Dossier refusé : seul « Ouassim BEN MASSAOUD Dossier complet » rend le dossier conforme",
+      );
+      return;
+    }
+
+    const sc = isResolution ? "complet" : detectScenario(file.name);
     setScenario(sc);
     setGlobalName(file.name);
     setNoteFixed(false);
     setCarteOk(false);
+    setOrderFixed(false);
     setAuditRan(false);
     setLog([]);
     setCompiled(null);
