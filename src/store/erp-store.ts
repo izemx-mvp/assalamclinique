@@ -125,7 +125,9 @@ type Actions = {
     statut: DossierRecord["statut"],
     pdfData?: string,
     items?: DossierItem[],
+    extra?: Partial<DossierRecord>,
   ) => string;
+
   updateDossier: (id: string, patch: Partial<DossierRecord>) => void;
   removeDossier: (id: string) => void;
 };
