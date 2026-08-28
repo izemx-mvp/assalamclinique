@@ -684,10 +684,18 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="glass-soft rounded-xl px-3 py-2 text-xs text-muted-foreground">
-              Mode PEC · {ORG}
-            </span>
-            <span className="glass-soft rounded-xl px-3 py-2 text-xs">{interventionName}</span>
+            <select
+              value={interventionId}
+              onChange={(e) => setInterventionId(e.target.value)}
+              className="glass-soft h-10 min-w-[220px] rounded-xl px-3 text-xs text-foreground outline-none"
+            >
+              {st.interventions.map((i) => (
+                <option key={i.id} value={i.id} className="bg-popover">
+                  {i.name}
+                </option>
+              ))}
+            </select>
+
           </div>
         </div>
       </div>
