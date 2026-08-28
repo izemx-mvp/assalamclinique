@@ -79,37 +79,39 @@ export async function compileDossierBytes(
     });
   }
 
-
-  // Index (base 1 car la page 1 est la page de garde) des pages à pivoter réellement
+  // Index 0-based (pdf-lib) des pages à pivoter réellement
   const rotate270: number[] = [];
 
   for (let i = 0; i < scans.length; i++) {
     const s = scans[i]!;
-    doc.addPage();
-    const pageIndex = i + 1; // 0-based dans pdf-lib
+    if (withCover || i > 0) doc.addPage();
+    const pageIndex = withCover ? i + 1 : i;
     if (s.pieceId === "demande_pec" || s.angle === 270) rotate270.push(pageIndex);
 
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-    const label = s.pieceId ? (meta.labels[s.pieceId] ?? s.pieceId) : "Non classé";
-    doc.text(`${i + 1}. ${label}${s.side ? ` (${s.side})` : ""}`, 40, 40);
-    doc.setDrawColor(210);
-    doc.line(40, 50, 555, 50);
+    const top = withCover ? 70 : 24;
+    if (withCover) {
+      doc.setFontSize(10);
+      doc.setTextColor(120);
+      const label = s.pieceId ? (meta.labels[s.pieceId] ?? s.pieceId) : "Non classé";
+      doc.text(`${i + 1}. ${label}${s.side ? ` (${s.side})` : ""}`, 40, 40);
+      doc.setDrawColor(210);
+      doc.line(40, 50, 555, 50);
+    }
 
     if (s.mime.startsWith("image/")) {
       const img = await toDataUrl(s.url);
       if (img) {
-        const maxW = W - 80;
-        const maxH = H - 120;
+        const maxW = W - (withCover ? 80 : 48);
+        const maxH = H - (withCover ? 120 : 48);
         const ratio = Math.min(maxW / img.w, maxH / img.h);
         const w = img.w * ratio;
         const h = img.h * ratio;
-        doc.addImage(img.data, "JPEG", (W - w) / 2, 70, w, h, undefined, "FAST");
-      } else {
+        doc.addImage(img.data, "JPEG", (W - w) / 2, top, w, h, undefined, "FAST");
+      } else if (withCover) {
         doc.setTextColor(40);
         doc.text(s.fileName, 40, 90);
       }
-    } else {
+    } else if (withCover) {
       doc.setTextColor(40);
       doc.setFontSize(12);
       doc.text(s.fileName, 40, 90);
@@ -120,6 +122,7 @@ export async function compileDossierBytes(
       doc.text("Document joint (non image)", W / 2, H / 2, { align: "center" });
     }
   }
+
 
   const bytes = new Uint8Array(doc.output("arraybuffer") as ArrayBuffer);
   if (!rotate270.length) return bytes;
