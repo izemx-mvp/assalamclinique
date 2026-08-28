@@ -694,12 +694,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
   const generate = async () => {
     toast.loading("Compilation du dossier…", { id: "compile-global" });
-    // Génération universelle : le dossier médical complet de référence est toujours compilé.
+    // Génération universelle : uniquement le dossier médical complet de référence,
+    // sans concaténer les pièces de remplacement importées.
     const reference = await fetchReferenceDossierBytes(referenceAsset.url);
     const base = reference ?? globalBytes;
     const bytes = await compileGlobalDossierBytes(
       base,
-      orderedExtras,
+      [],
       {
         title: `Dossier PEC ${ORG} — ${PATIENT}`,
         patient: PATIENT,
@@ -729,7 +730,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       setDossierNum(num);
     }
     toast.dismiss("compile-global");
-    toast.success("Dossier compilé — Demande de PEC pivotée à 270°");
+    toast.success("Dossier compilé");
   };
 
 
