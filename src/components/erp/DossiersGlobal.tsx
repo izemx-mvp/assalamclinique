@@ -225,7 +225,9 @@ export function DossiersGlobal() {
                 <th className="px-3 pb-1 font-medium">Patient</th>
                 <th className="px-3 pb-1 font-medium">Intervention</th>
                 <th className="px-3 pb-1 font-medium">Organisme</th>
+                <th className="px-3 pb-1 font-medium">Mode</th>
                 <th className="px-3 pb-1 font-medium">Date de création</th>
+
                 <th className="px-3 pb-1 font-medium">Créé par</th>
                 <th className="px-3 pb-1 font-medium">Statut</th>
                 <th className="px-3 pb-1 text-right font-medium">Actions</th>
