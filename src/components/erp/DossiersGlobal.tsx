@@ -1024,12 +1024,35 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
           {auditRan && (
             <Panel title="Résultats du contrôle">
               <div className="flex flex-col gap-2">
+                {(missing.length > 0 || anomalyActive || orderIssue) && (
+                  <div className="flex justify-start">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="rounded-lg"
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
+                    >
+                      <FileStack className="size-3.5" /> Importer le dossier global complet
+                    </Button>
+                  </div>
+                )}
+
                 {missing.length === 0 && !anomalyActive && !orderIssue && (
                   <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
                     <CheckCircle2 className="size-4" />
                     {scenario === "ordre"
                       ? "Dossier réorganisé et conforme"
                       : "Dossier conforme — aucune anomalie détectée"}
+                  </p>
+                )}
+
+                {scenario !== "complet" && (
+                  <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
+                    <CheckCircle2 className="size-4 shrink-0" />
+                    {rotationDetail}
                   </p>
                 )}
 
@@ -1056,17 +1079,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                       }}
                     >
                       <RefreshCcw className="size-3.5" /> Corriger l'ordre automatiquement
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        resolving.current = true;
-                        globalRef.current?.click();
-                      }}
-                    >
-                      <FileStack className="size-3.5" /> Importer le dossier global complet
                     </Button>
                   </div>
                 )}
@@ -1097,17 +1109,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                     >
                       <Upload className="size-3.5" /> Importer la pièce seule
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        resolving.current = true;
-                        globalRef.current?.click();
-                      }}
-                    >
-                      <FileStack className="size-3.5" /> Importer le dossier global complet
-                    </Button>
                   </div>
                 ))}
 
@@ -1129,19 +1130,9 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                     >
                       <RefreshCcw className="size-3.5" /> Remplacer la pièce
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="rounded-lg"
-                      onClick={() => {
-                        resolving.current = true;
-                        globalRef.current?.click();
-                      }}
-                    >
-                      <FileStack className="size-3.5" /> Importer le dossier global complet
-                    </Button>
                   </div>
                 )}
+
 
                 {(missing.length > 0 || anomalyActive || orderIssue) && (
                   <div className="mt-2 flex justify-center">
