@@ -482,7 +482,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const [globalName, setGlobalName] = useState<string | null>(null);
   const [globalBytes, setGlobalBytes] = useState<Uint8Array | null>(null);
   const [carteOk, setCarteOk] = useState(false);
-  const [noteFixed, setNoteFixed] = useState(false);
+  const [noteReplacement, setNoteReplacement] = useState<string | null>(null);
   const [extras, setExtras] = useState<Scan[]>([]);
   const [log, setLog] = useState<AuditStep[]>([]);
   const [running, setRunning] = useState(false);
@@ -516,7 +516,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     const sc = isResolution ? "complet" : detectScenario(file.name);
     setScenario(sc);
     setGlobalName(file.name);
-    setNoteFixed(false);
+    setNoteReplacement(null);
     setCarteOk(false);
     setOrderFixed(false);
     setAuditRan(false);
@@ -564,14 +564,10 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       toast.success("Carte CNSS validée — Patient = Assuré détecté");
     }
     if (pieceId === "note_conf") {
-      if (!isCleanNoteConfidentielle(file.name)) {
-        toast.error(
-          "Fichier refusé : seul un document nommé exactement « Note confidentielle » est accepté",
-        );
-        return;
-      }
-      setNoteFixed(true);
-      toast.success("Note confidentielle remplacée — relancez le contrôle");
+      // Acceptation immédiate du fichier : l'évaluation de conformité est
+      // différée au prochain « Relancer le contrôle » (audit IA).
+      setNoteReplacement(file.name);
+      toast.success("Note confidentielle remplacée — Veuillez relancer le contrôle");
     }
 
     setExtras((prev) => [
@@ -602,7 +598,10 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   };
 
   const missing = required.filter((id) => !satisfied(id));
-  const anomalyActive = scenario === "errone" && !noteFixed;
+  // CAS 4 : la conformité de la Note confidentielle n'est jugée qu'au re-contrôle.
+  const anomalyActive =
+    scenario === "errone" && !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
+  const anomalyPersistent = anomalyActive && noteReplacement !== null;
   const orderIssue = scenario === "ordre" && !orderFixed;
   const blocked = !scenario || missing.length > 0 || anomalyActive || orderIssue || !auditRan;
 
@@ -660,7 +659,9 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     plan.push({
       label: "Vérification des anomalies de contenu",
       detail: anomalyActive
-        ? "Note confidentielle — nom et prénom non conformes avec les pièces d'identité"
+        ? anomalyPersistent
+          ? "Anomalie persistante : Informations de la Note confidentielle non conformes"
+          : "Note confidentielle — nom et prénom non conformes avec les pièces d'identité"
         : "Aucune anomalie détectée",
       final: anomalyActive ? "error" : "success",
     });
@@ -707,7 +708,6 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         mode: "Prise en charge",
         labels,
       },
-      { rotateLast: scenario === "rotes", lastAngle: 180 },
     );
     const dataUri = bytesToDataUri(bytes);
     const items = await buildDossierItems(orderedExtras, labels);
@@ -729,11 +729,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       setDossierNum(num);
     }
     toast.dismiss("compile-global");
-    toast.success(
-      scenario === "rotes"
-        ? "Dossier compilé — Demande de PEC 270° et dernier document 180°"
-        : "Dossier compilé — Demande de PEC pivotée à 270°",
-    );
+    toast.success("Dossier compilé — Demande de PEC pivotée à 270°");
   };
 
 
@@ -1046,8 +1042,9 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                   <div className="flex flex-wrap items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-3">
                     <AlertTriangle className="size-4 shrink-0 text-destructive" />
                     <span className="min-w-0 flex-1 text-sm text-destructive">
-                      Anomalie détectée : Note confidentielle — Nom et prénom non conformes /
-                      incohérents avec les pièces d'identité
+                      {anomalyPersistent
+                        ? "Anomalie persistante : Informations de la Note confidentielle non conformes"
+                        : "Anomalie détectée : Note confidentielle — Nom et prénom non conformes / incohérents avec les pièces d'identité"}
                     </span>
                     <Button
                       size="sm"
