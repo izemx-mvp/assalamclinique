@@ -66,7 +66,8 @@ const STEPS = [
 /* ---------------------------- Stepper d'audit ---------------------------- */
 
 type AuditStatus = "pending" | "running" | "success" | "warning" | "error";
-type AuditStep = { id: number; label: string; detail: string; status: AuditStatus };
+type AuditStep = { id: number; label: string; detail: string; status: AuditStatus; badge?: string };
+
 
 const AUDIT_STYLES: Record<AuditStatus, { box: string; badge: string; label: string }> = {
   success: {
