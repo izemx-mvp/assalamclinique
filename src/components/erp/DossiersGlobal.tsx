@@ -874,6 +874,28 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
       {step === 1 && (
         <div className="flex flex-col gap-5">
+          {analyzing && (
+            <div className="glass flex items-center justify-center gap-3 rounded-2xl px-5 py-4 text-sm text-accent">
+              <Loader2 className="size-5 animate-spin" />
+              Analyse IA du document en cours…
+            </div>
+          )}
+
+          {!analyzing && scenario && (
+            <div className="glass flex flex-wrap items-center gap-2 rounded-2xl px-5 py-3 text-[11px]">
+              <span className="mr-1 tracking-wide text-muted-foreground uppercase">
+                Données extraites
+              </span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
+                Intervention : {interventionName}
+              </span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">Mode : PEC</span>
+              <span className="rounded-md bg-primary/20 px-2 py-1 text-accent">
+                Organisme : {ORG}
+              </span>
+            </div>
+          )}
+
           <Panel title="Scanner et Importer">
             <div
               onDragOver={(e) => e.preventDefault()}
@@ -901,6 +923,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
             </div>
           </Panel>
 
+          {!analyzing && scenario && (
           <Panel
             title={`Checklist des exigences (${required.length})`}
             action={
@@ -909,6 +932,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
               </span>
             }
           >
+
             <div className="flex flex-col gap-2.5">
               {required.map((id, i) => {
                 const ok = satisfied(id);
