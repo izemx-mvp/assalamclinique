@@ -467,7 +467,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   const defaultInterventionId = st.interventions.some((i) => i.id === INTERVENTION_ID)
     ? INTERVENTION_ID
     : (st.interventions[0]?.id ?? "");
-  const [interventionId, setInterventionId] = useState(defaultInterventionId);
+  const [interventionId] = useState(defaultInterventionId);
   const required = savedOrder(interventionId, ORG, "PEC");
   const labels = useMemo(
     () => Object.fromEntries(st.pieces.map((p) => [p.id, p.label])),
