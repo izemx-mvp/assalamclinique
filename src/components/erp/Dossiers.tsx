@@ -280,7 +280,25 @@ export function Dossiers() {
                     placeholder="Organisme…"
                   />
                 </th>
+                <th className="px-3 pb-2">
+                  <select
+                    value={filters.mode}
+                    onChange={(e) => setFilter("mode", e.target.value)}
+                    className="glass-soft h-8 w-full rounded-lg px-2 text-[11px] font-normal text-foreground normal-case outline-none"
+                  >
+                    <option value="" className="bg-popover">
+                      Tous
+                    </option>
+                    <option value="PEC" className="bg-popover">
+                      PEC
+                    </option>
+                    <option value="EXP" className="bg-popover">
+                      Expédition
+                    </option>
+                  </select>
+                </th>
                 <th className="px-3 pb-2" />
+
                 <th className="px-3 pb-2">
                   <FilterInput
                     value={filters.createdBy}
