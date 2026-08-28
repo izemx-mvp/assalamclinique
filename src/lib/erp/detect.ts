@@ -61,6 +61,28 @@ export function detectFromName(name: string): Detection {
 
 export const hasAnomaly = (name: string) => ANOMALY_RE.test(name);
 
+/** Termes interdits pour le remplacement de la Note confidentielle. */
+const NOTE_REJECT_RE =
+  /anomalie|anom\b|note\s*confid(?!entielle\s*$)|note\s*confif|erreur|erron|probleme|problème/i;
+
+/**
+ * Remplacement strict de la Note confidentielle :
+ * seul un fichier nommé exactement « Note confidentielle » (avec extension optionnelle) est accepté.
+ */
+export function isCleanNoteConfidentielle(name: string): boolean {
+  const n = normalize(name).toLowerCase();
+  if (/anomalie|anom\b|note\s*confif|erreur|erron|probleme|problème/i.test(n)) return false;
+  return /^note\s*confidentielle$/.test(n);
+}
+
+/** Le dossier global importé est-il le dossier complet de référence ? */
+export function isDossierCompletFile(name: string): boolean {
+  const n = normalize(name).toLowerCase();
+  return /ouassim\s*ben\s*massaoud\s*dossier\s*complet/.test(n);
+}
+
+export { NOTE_REJECT_RE };
+
 /** Scénarios de simulation IA du sous-module « dossier global ». */
 export type GlobalScenario = "complet" | "manquant" | "ordre" | "errone" | "rotes";
 
