@@ -1032,7 +1032,10 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                       size="sm"
                       variant="secondary"
                       className="rounded-lg"
-                      onClick={() => globalRef.current?.click()}
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
                     >
                       <FileStack className="size-3.5" /> Importer le dossier global complet
                     </Button>
@@ -1060,14 +1063,17 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                       size="sm"
                       variant="secondary"
                       className="rounded-lg"
-                      onClick={() => globalRef.current?.click()}
+                      onClick={() => {
+                        resolving.current = true;
+                        globalRef.current?.click();
+                      }}
                     >
                       <FileStack className="size-3.5" /> Importer le dossier global complet
                     </Button>
                   </div>
                 )}
 
-                {(missing.length > 0 || anomalyActive) && (
+                {(missing.length > 0 || anomalyActive || orderIssue) && (
                   <div className="mt-2 flex justify-center">
                     <Button variant="secondary" className="rounded-xl" onClick={runAudit}>
                       <RefreshCcw className="size-4" /> Relancer le contrôle
