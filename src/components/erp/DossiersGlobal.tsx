@@ -371,7 +371,7 @@ export function DossiersGlobal() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="py-10 text-center text-sm text-muted-foreground">
                     Aucun dossier trouvé.
                   </td>
                 </tr>
