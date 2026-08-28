@@ -146,7 +146,9 @@ export function Dossiers() {
 
   const filtered = st.dossiers.filter(
     (d) =>
+      d.source !== "global" &&
       `${d.num} ${d.patient} ${names[d.interventionId] ?? ""} ${d.org}`
+
         .toLowerCase()
         .includes(search.toLowerCase()) &&
       has(d.num, filters.num) &&
