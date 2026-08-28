@@ -616,6 +616,18 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       toast.error("Importez d'abord le dossier global");
       return;
     }
+    // Évaluation différée du correctif importé à l'étape 2.
+    const resolvedNow =
+      resolvedActive ||
+      !!(resolutionName && isDossierCompletFile(resolutionName)) ||
+      !!(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
+    if (resolvedNow && !resolvedActive) setResolvedActive(true);
+
+    const missingNow = resolvedNow ? [] : missing;
+    const anomalyNow = resolvedNow ? false : anomalyActive;
+    const anomalyPersistentNow = anomalyNow && noteReplacement !== null;
+    const orderIssueNow = resolvedNow ? false : orderIssue;
+
     setRunning(true);
     const plan: { label: string; detail: string; final: AuditStatus }[] = [
       {
@@ -625,7 +637,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       },
       {
         label: "Éclatement du dossier global en pièces",
-        detail: globalName ?? "Dossier global",
+        detail: resolutionName ?? globalName ?? "Dossier global",
         final: "success",
       },
       {
@@ -646,33 +658,33 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
     if (scenario === "ordre") {
       plan.push({
-        label: orderIssue
+        label: orderIssueNow
           ? "Analyse de l'ordre des pièces"
           : "Réorganisation et placement strict selon l'ordre du référentiel",
-        detail: orderIssue
+        detail: orderIssueNow
           ? "L'ordre des pièces dans le fichier ne respecte pas le référentiel de l'intervention"
           : `${required.length} pièce(s) replacées selon la matrice ${ORG} / PEC`,
-        final: orderIssue ? "error" : "success",
+        final: orderIssueNow ? "error" : "success",
       });
     }
 
     plan.push({
       label: "Vérification des anomalies de contenu",
-      detail: anomalyActive
-        ? anomalyPersistent
+      detail: anomalyNow
+        ? anomalyPersistentNow
           ? "Anomalie persistante : Informations de la Note confidentielle non conformes"
           : "Note confidentielle — nom et prénom non conformes avec les pièces d'identité"
         : "Aucune anomalie détectée",
-      final: anomalyActive ? "error" : "success",
+      final: anomalyNow ? "error" : "success",
     });
 
     plan.push({
       label: "Conformité au référentiel de l'organisme",
       detail:
-        missing.length === 0
+        missingNow.length === 0
           ? `${required.length} pièce(s) requises présentes`
-          : `Documents manquants : ${missing.map((id) => labels[id] ?? id).join(", ")}`,
-      final: missing.length === 0 ? "success" : "warning",
+          : `Documents manquants : ${missingNow.map((id) => labels[id] ?? id).join(", ")}`,
+      final: missingNow.length === 0 ? "success" : "warning",
     });
 
     setLog(plan.map((p, i) => ({ id: i, label: p.label, detail: p.detail, status: "pending" })));
@@ -683,7 +695,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     }
     setAuditRan(true);
     setRunning(false);
-    if (missing.length === 0 && !anomalyActive && !orderIssue)
+    if (missingNow.length === 0 && !anomalyNow && !orderIssueNow)
       toast.success(
         scenario === "ordre"
           ? "Dossier réorganisé et conforme"
@@ -691,6 +703,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       );
     else toast.warning("Points bloquants détectés");
   };
+
 
   const generate = async () => {
     toast.loading("Compilation du dossier…", { id: "compile-global" });
