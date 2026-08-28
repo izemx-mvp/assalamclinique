@@ -125,9 +125,19 @@ function AuditStepCard({ step, index }: { step: AuditStep; index: number }) {
         <span className={cn("rounded-md border px-2 py-0.5 text-[10px]", s.badge)}>
           {step.status === "pending" || step.status === "running" ? s.label : (step.badge ?? s.label)}
         </span>
-
       </div>
-      <p className="mt-1 pl-7 text-[11px] text-muted-foreground">{step.detail}</p>
+      <p
+        className={cn(
+          "mt-1 pl-7 text-[11px]",
+          step.status === "success" && "text-emerald-400",
+          step.status === "warning" && "text-amber-400",
+          step.status === "error" && "text-rose-400",
+          step.status === "pending" && "text-slate-400",
+          step.status === "running" && "text-sky-400",
+        )}
+      >
+        {step.detail}
+      </p>
     </li>
   );
 }
@@ -625,10 +635,16 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     !(noteReplacement && isCleanNoteConfidentielle(noteReplacement));
   const anomalyPersistent = anomalyActive && noteReplacement !== null;
   const orderIssue = scenario === "ordre" && !orderFixed && !resolvedActive;
-  const rotationDetail =
+  const rotationStepDetail =
+    scenario === "complet"
+      ? "Tous les documents sont bien redressés et orientés"
+      : scenario === "rotes"
+        ? "2 documents détectés mal orientés (Demande de PEC, Carte mutuelle)"
+        : "1 document (Demande de PEC) détecté mal orienté";
+  const rotationResultDetail =
     scenario === "rotes"
-      ? "Redressement automatique détecté sur 2 documents (Demande de PEC: 270°, Carte mutuelle/Dernier document: 180°)"
-      : "Redressement automatique détecté sur 1 document (Demande de PEC: 270°)";
+      ? "Redressement corrigé sur 2 documents (Demande de PEC: 270°, Carte mutuelle: 180°)"
+      : "Redressement corrigé sur 1 document (Demande de PEC: 270°)";
   // CAS 5 : l'accès à l'étape finale exige un re-contrôle après redressement.
   const rotationBlock = scenario === "rotes" && auditRuns < 2;
   const blocked =
