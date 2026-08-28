@@ -59,7 +59,12 @@ export type DossierRecord = {
   pdfData?: string;
   /** Suite ordonnée exacte des pièces importées lors de la création. */
   items?: DossierItem[];
+  /** Sous-module d'origine ("global" = ingestion de dossiers complets). */
+  source?: "standard" | "global";
+  /** Nom de fichier PDF imposé (sous-module global). */
+  fileName?: string;
 };
+
 
 
 type State = {
