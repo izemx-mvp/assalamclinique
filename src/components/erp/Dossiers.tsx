@@ -37,11 +37,11 @@ import {
   compileDossierBytes,
   dossierFileName,
   buildDossierItems,
-  dossierPdfUrl,
   downloadDataUri,
 } from "@/lib/erp/dossier-pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel, Segmented } from "./ui-bits";
+import { PdfViewer } from "./PdfViewer";
 import { cn } from "@/lib/utils";
 
 
@@ -169,19 +169,26 @@ export function Dossiers() {
 
   const orgLabel = (id: string) => ORGANISMES.find((o) => o.id === id)?.label ?? id;
 
-  // Génère le PDF du dossier sélectionné pour le visualiseur
+  // Prépare la data URI du PDF du dossier sélectionné pour le visualiseur canvas
   useEffect(() => {
-    let revoked: string | null = null;
+    let cancelled = false;
     setPieceIndex(0);
     setViewerTab("pdf");
-    if (detail) {
-      dossierPdfUrl(detail, names[detail.interventionId] ?? "—", orgLabel(detail.org)).then((u) => {
-        revoked = u;
-        setViewerUrl(u);
-      });
-    } else setViewerUrl(null);
+    if (!detail) {
+      setViewerUrl(null);
+      return;
+    }
+    if (detail.pdfData) {
+      setViewerUrl(detail.pdfData);
+      return;
+    }
+    buildDossierPdf(detail, names[detail.interventionId] ?? "—", orgLabel(detail.org)).then(
+      (doc) => {
+        if (!cancelled) setViewerUrl(doc.output("datauristring"));
+      },
+    );
     return () => {
-      if (revoked) URL.revokeObjectURL(revoked);
+      cancelled = true;
     };
   }, [detail]);
 
@@ -501,11 +508,7 @@ export function Dossiers() {
           ) : (
             <div className="glass-soft h-[70vh] overflow-hidden rounded-xl">
               {viewerUrl ? (
-                <iframe
-                  src={viewerUrl}
-                  title={`Dossier ${detail?.num}`}
-                  className="h-full w-full rounded-xl border-0"
-                />
+                <PdfViewer dataUri={viewerUrl} />
               ) : (
                 <div className="grid h-full place-items-center text-sm text-muted-foreground">
                   Compilation du document…

@@ -41,13 +41,13 @@ import {
   buildDossierItems,
   bytesToDataUri,
   compileGlobalDossierBytes,
-  dataUriToBlobUrl,
   downloadDataUri,
   fetchReferenceDossierBytes,
 } from "@/lib/erp/dossier-pdf";
 import referenceAsset from "@/assets/dossier-reference.pdf.asset.json";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel } from "./ui-bits";
+import { PdfViewer } from "./PdfViewer";
 import { cn } from "@/lib/utils";
 
 
@@ -174,10 +174,6 @@ export function DossiersGlobal() {
   const safePage = Math.min(page, pages);
   const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  const viewerUrl = useMemo(
-    () => (detail?.pdfData ? dataUriToBlobUrl(detail.pdfData) : null),
-    [detail],
-  );
 
   const fileNameOf = (d: DossierRecord) =>
     d.fileName ?? `PEC_CNSS_Ouassim_BEN_MASSAOUD_${d.num}.pdf`;
@@ -413,12 +409,8 @@ export function DossiersGlobal() {
             </DialogTitle>
           </DialogHeader>
           <div className="glass-soft h-[70vh] overflow-hidden rounded-xl">
-            {viewerUrl ? (
-              <iframe
-                src={viewerUrl}
-                title={`Dossier ${detail?.num}`}
-                className="h-full w-full rounded-xl border-0"
-              />
+            {detail?.pdfData ? (
+              <PdfViewer dataUri={detail.pdfData} />
             ) : (
               <div className="grid h-full place-items-center text-sm text-muted-foreground">
                 Aucun PDF compilé disponible.
@@ -722,6 +714,11 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     // sans concaténer les pièces de remplacement importées.
     const reference = await fetchReferenceDossierBytes(referenceAsset.url);
     const base = reference ?? globalBytes;
+    if (!base) {
+      toast.dismiss("compile-global");
+      toast.error("Dossier source introuvable — réimportez le PDF global");
+      return;
+    }
     const bytes = await compileGlobalDossierBytes(
       base,
       [],
@@ -1116,11 +1113,9 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         >
           <div className="glass-soft grid min-h-[420px] place-items-center overflow-hidden rounded-2xl p-3">
             {compiled ? (
-              <iframe
-                src={dataUriToBlobUrl(compiled)}
-                title={pdfName}
-                className="h-[420px] w-full rounded-xl border-0"
-              />
+              <div className="h-[560px] w-full">
+                <PdfViewer dataUri={compiled} />
+              </div>
             ) : (
               <div className="flex flex-col items-center gap-3 py-8 text-center">
                 <FileText className="size-14 text-muted-foreground/60" />
