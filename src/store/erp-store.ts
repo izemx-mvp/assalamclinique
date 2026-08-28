@@ -59,7 +59,12 @@ export type DossierRecord = {
   pdfData?: string;
   /** Suite ordonnée exacte des pièces importées lors de la création. */
   items?: DossierItem[];
+  /** Sous-module d'origine ("global" = ingestion de dossiers complets). */
+  source?: "standard" | "global";
+  /** Nom de fichier PDF imposé (sous-module global). */
+  fileName?: string;
 };
+
 
 
 type State = {
@@ -120,7 +125,9 @@ type Actions = {
     statut: DossierRecord["statut"],
     pdfData?: string,
     items?: DossierItem[],
+    extra?: Partial<DossierRecord>,
   ) => string;
+
   updateDossier: (id: string, patch: Partial<DossierRecord>) => void;
   removeDossier: (id: string) => void;
 };
@@ -520,7 +527,7 @@ export const useErp = create<State & Actions>((set, get) => ({
       return { dossiers };
     }),
 
-  commitDossier: (statut, pdfData, items) => {
+  commitDossier: (statut, pdfData, items, extra) => {
     const newId = uid();
     set((st) => {
       const num = `DOS-2026-${String(st.dossiers.length + 1).padStart(4, "0")}`;
@@ -539,6 +546,8 @@ export const useErp = create<State & Actions>((set, get) => ({
           pages: st.scans.length,
           ...(pdfData ? { pdfData } : {}),
           ...(items ? { items } : {}),
+          ...(extra ?? {}),
+
         },
       ];
       persistDossiers(dossiers);

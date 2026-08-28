@@ -60,3 +60,19 @@ export function detectFromName(name: string): Detection {
 }
 
 export const hasAnomaly = (name: string) => ANOMALY_RE.test(name);
+
+/** Scénarios de simulation IA du sous-module « dossier global ». */
+export type GlobalScenario = "complet" | "manquant" | "ordre" | "errone";
+
+/**
+ * Reconnaît le scénario de test à partir du nom du dossier global déposé.
+ * Ex. « OUASSIM BEN MASSAOUD Dossier avec ordre incorrect.pdf » → "ordre".
+ */
+export function detectScenario(name: string): GlobalScenario {
+  const n = normalize(name).toLowerCase();
+  if (/ordre\s*incorrect|desordre|désordre/.test(n)) return "ordre";
+  if (/erron|erreur|anomalie/.test(n)) return "errone";
+  if (/manquant|incomplet/.test(n)) return "manquant";
+  return "complet";
+}
+

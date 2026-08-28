@@ -7,13 +7,15 @@ import {
   PanelLeftOpen,
   SlidersHorizontal,
   Stethoscope,
+  FileStack,
 } from "lucide-react";
 import { Parametrage } from "./Parametrage";
 import { Dossiers } from "./Dossiers";
+import { DossiersGlobal } from "./DossiersGlobal";
 import { ThemeToggle } from "./ThemeToggle";
 import { cn } from "@/lib/utils";
 
-type View = "parametrage" | "dossiers";
+type View = "parametrage" | "dossiers" | "dossiers-global";
 
 export function Shell() {
   const [open, setOpen] = useState(true);
@@ -23,6 +25,7 @@ export function Shell() {
   const items = [
     { id: "parametrage" as const, label: "Paramétrage des Interventions", Icon: SlidersHorizontal },
     { id: "dossiers" as const, label: "Dossiers d'Intervention", Icon: Stethoscope },
+    { id: "dossiers-global" as const, label: "DOSSIERS D'INTERVENTION", Icon: FileStack },
   ];
 
   return (
@@ -108,7 +111,13 @@ export function Shell() {
           </div>
           <ThemeToggle />
         </div>
-        {view === "parametrage" ? <Parametrage /> : <Dossiers />}
+        {view === "parametrage" ? (
+          <Parametrage />
+        ) : view === "dossiers" ? (
+          <Dossiers />
+        ) : (
+          <DossiersGlobal />
+        )}
       </main>
     </div>
   );

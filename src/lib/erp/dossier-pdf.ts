@@ -151,7 +151,46 @@ export async function buildDossierItems(
   return items;
 }
 
+/**
+ * Compilation du sous-module « ingestion de dossier global » :
+ * les pages du PDF global sont réellement reprises (la 1ère page — Demande de PEC —
+ * est pivotée à 270° dans le flux binaire), puis les pièces importées séparément
+ * sont ajoutées à la suite dans l'ordre du référentiel.
+ */
+export async function compileGlobalDossierBytes(
+  globalBytes: Uint8Array | null,
+  extras: Scan[],
+  meta: CompileMeta,
+): Promise<Uint8Array> {
+  const { PDFDocument, degrees } = await import("pdf-lib");
+  const out = await PDFDocument.create();
+
+  if (globalBytes) {
+    try {
+      const src = await PDFDocument.load(globalBytes);
+      const copied = await out.copyPages(src, src.getPageIndices());
+      copied.forEach((p, i) => {
+        if (i === 0) p.setRotation(degrees(270));
+        out.addPage(p);
+      });
+    } catch {
+      /* fichier global illisible : on retombe sur les pièces */
+    }
+  }
+
+  if (extras.length) {
+    const extraBytes = await compileDossierBytes(extras, meta);
+    const src2 = await PDFDocument.load(extraBytes);
+    const copied2 = await out.copyPages(src2, src2.getPageIndices());
+    copied2.forEach((p) => out.addPage(p));
+  }
+
+  if (out.getPageCount() === 0) return await compileDossierBytes(extras, meta);
+  return await out.save();
+}
+
 export const bytesToDataUri = (bytes: Uint8Array) => {
+
   let bin = "";
   const chunk = 0x8000;
   for (let i = 0; i < bytes.length; i += chunk)
