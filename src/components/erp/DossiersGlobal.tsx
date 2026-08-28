@@ -974,12 +974,18 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
               })}
             </div>
           </Panel>
+          )}
 
           <div className="flex justify-end">
-            <Button className="rounded-xl px-6" onClick={() => setStep(2)}>
+            <Button
+              className="rounded-xl px-6"
+              disabled={!scenario || analyzing}
+              onClick={() => setStep(2)}
+            >
               Suivant
             </Button>
           </div>
+
         </div>
       )}
 
