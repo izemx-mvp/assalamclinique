@@ -316,7 +316,13 @@ export function DossiersGlobal() {
                     {names[d.interventionId] ?? "—"}
                   </td>
                   <td className="px-3 py-3 text-muted-foreground">{orgLabel(d.org)}</td>
+                  <td className="px-3 py-3">
+                    <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[11px] text-accent">
+                      {modeOf(d) === "EXP" ? "Expédition" : "PEC"}
+                    </span>
+                  </td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdAt}</td>
+
                   <td className="px-3 py-3 text-muted-foreground">{d.createdBy}</td>
                   <td className="px-3 py-3">
                     <span
