@@ -697,8 +697,8 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
         final: "success",
       },
       {
-        label: "Redressement et rotation automatique",
-        detail: rotationDetail,
+        label: "Redressement et rotation",
+        detail: rotationStepDetail,
         final: scenario === "complet" ? "success" : "warning",
         badge: scenario === "complet" ? "Validé" : "Corrigé",
       },
@@ -1075,7 +1075,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                 {scenario !== "complet" && (
                   <p className="flex items-center gap-2 rounded-xl border border-success/40 bg-success/10 px-3 py-3 text-sm text-success">
                     <CheckCircle2 className="size-4 shrink-0" />
-                    {rotationDetail}
+                    {rotationResultDetail}
                   </p>
                 )}
 
