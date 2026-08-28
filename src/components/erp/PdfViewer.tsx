@@ -35,11 +35,23 @@ export function PdfViewer({
     (async () => {
       try {
         const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-        const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs?url");
-        pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+
+        // Le worker doit être instancié par le bundler (?worker) : l'approche `?url`
+        // casse en production (module ESM servi avec un mauvais type MIME / chemin).
+        if (!pdfjs.GlobalWorkerOptions.workerPort && !pdfjs.GlobalWorkerOptions.workerSrc) {
+          try {
+            const mod = await import("pdfjs-dist/legacy/build/pdf.worker.mjs?worker");
+            pdfjs.GlobalWorkerOptions.workerPort = new mod.default();
+          } catch (workerError) {
+            console.error("[PdfViewer] worker indisponible, fallback URL", workerError);
+            const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs?url");
+            pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+          }
+        }
 
         const doc = await pdfjs.getDocument({ data: dataUriToBytes(dataUri) }).promise;
         if (cancelled) return;
+
 
         const host = hostRef.current;
         if (!host) return;
@@ -60,9 +72,11 @@ export function PdfViewer({
           host.appendChild(canvas);
           await page.render({ canvasContext: ctx, viewport }).promise;
         }
-      } catch {
+      } catch (error) {
+        console.error("[PdfViewer] rendu impossible", error);
         if (!cancelled) setState("error");
       }
+
     })();
 
     return () => {

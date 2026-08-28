@@ -167,13 +167,26 @@ export async function buildDossierItems(
 /** Charge le dossier PDF de référence (Ouassim BEN MASSAOUD) depuis le CDN. */
 export async function fetchReferenceDossierBytes(url: string): Promise<Uint8Array | null> {
   try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    return new Uint8Array(await res.arrayBuffer());
-  } catch {
+    const res = await fetch(url, { cache: "force-cache" });
+    if (!res.ok) {
+      console.error("[dossier-pdf] référence introuvable", url, res.status);
+      return null;
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    // En production, un mauvais routage peut renvoyer du HTML (index.html) avec un 200 :
+    // on vérifie la signature binaire du PDF avant de l'utiliser.
+    const header = String.fromCharCode(...bytes.subarray(0, 5));
+    if (header !== "%PDF-") {
+      console.error("[dossier-pdf] la référence n'est pas un PDF", url, header);
+      return null;
+    }
+    return bytes;
+  } catch (error) {
+    console.error("[dossier-pdf] échec du chargement de la référence", url, error);
     return null;
   }
 }
+
 
 /**
  * Compilation du sous-module « ingestion de dossier global ».
