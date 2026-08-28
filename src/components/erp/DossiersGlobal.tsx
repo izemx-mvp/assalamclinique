@@ -603,7 +603,8 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
   const missing = required.filter((id) => !satisfied(id));
   const anomalyActive = scenario === "errone" && !noteFixed;
-  const blocked = !scenario || missing.length > 0 || anomalyActive || !auditRan;
+  const orderIssue = scenario === "ordre" && !orderFixed;
+  const blocked = !scenario || missing.length > 0 || anomalyActive || orderIssue || !auditRan;
 
   const orderedExtras = [...extras].sort((a, b) => {
     const ia = a.pieceId ? required.indexOf(a.pieceId) : 999;
