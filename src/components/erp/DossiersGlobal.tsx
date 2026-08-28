@@ -424,9 +424,10 @@ export function DossiersGlobal() {
 function GlobalWizard({ onExit }: { onExit: () => void }) {
   const st = useErp();
   const savedOrder = useErp((s) => s.savedOrder);
-  const interventionId = st.interventions.some((i) => i.id === INTERVENTION_ID)
+  const defaultInterventionId = st.interventions.some((i) => i.id === INTERVENTION_ID)
     ? INTERVENTION_ID
     : (st.interventions[0]?.id ?? "");
+  const [interventionId, setInterventionId] = useState(defaultInterventionId);
   const required = savedOrder(interventionId, ORG, "PEC");
   const labels = useMemo(
     () => Object.fromEntries(st.pieces.map((p) => [p.id, p.label])),
@@ -434,6 +435,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
   );
   const interventionName =
     st.interventions.find((i) => i.id === interventionId)?.name ?? "Cholécystite";
+
 
   const [step, setStep] = useState(1);
   const [scenario, setScenario] = useState<GlobalScenario | null>(null);
