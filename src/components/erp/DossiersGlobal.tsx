@@ -273,7 +273,7 @@ export function DossiersGlobal() {
                     <option value="PEC" className="bg-popover">
                       PEC
                     </option>
-                    <option value="EXP" className="bg-popover">
+                    <option value="EXPEDITION" className="bg-popover">
                       Expédition
                     </option>
                   </select>
@@ -318,7 +318,7 @@ export function DossiersGlobal() {
                   <td className="px-3 py-3 text-muted-foreground">{orgLabel(d.org)}</td>
                   <td className="px-3 py-3">
                     <span className="rounded-md bg-primary/20 px-2 py-0.5 text-[11px] text-accent">
-                      {modeOf(d) === "EXP" ? "Expédition" : "PEC"}
+                      {modeOf(d) === "EXPEDITION" ? "Expédition" : "PEC"}
                     </span>
                   </td>
                   <td className="px-3 py-3 text-muted-foreground">{d.createdAt}</td>
