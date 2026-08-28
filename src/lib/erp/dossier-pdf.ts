@@ -164,16 +164,28 @@ export async function buildDossierItems(
   return items;
 }
 
+/** Charge le dossier PDF de référence (Ouassim BEN MASSAOUD) depuis le CDN. */
+export async function fetchReferenceDossierBytes(url: string): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return new Uint8Array(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Compilation du sous-module « ingestion de dossier global » :
- * les pages du PDF global sont réellement reprises (la 1ère page — Demande de PEC —
- * est pivotée à 270° dans le flux binaire), puis les pièces importées séparément
- * sont ajoutées à la suite dans l'ordre du référentiel.
+ * Compilation du sous-module « ingestion de dossier global ».
+ * Le PDF final ne contient QUE les pages réelles des documents (aucune page de garde) :
+ * la 1ère page (Demande de PEC) est pivotée à 270° dans le flux binaire, et,
+ * si `rotateLast`, la dernière page (Carte mutuelle) l'est également.
  */
 export async function compileGlobalDossierBytes(
   globalBytes: Uint8Array | null,
   extras: Scan[],
   meta: CompileMeta,
+  opts: { rotateLast?: boolean } = {},
 ): Promise<Uint8Array> {
   const { PDFDocument, degrees } = await import("pdf-lib");
   const out = await PDFDocument.create();
@@ -182,8 +194,10 @@ export async function compileGlobalDossierBytes(
     try {
       const src = await PDFDocument.load(globalBytes);
       const copied = await out.copyPages(src, src.getPageIndices());
+      const last = copied.length - 1;
       copied.forEach((p, i) => {
         if (i === 0) p.setRotation(degrees(270));
+        else if (opts.rotateLast && i === last) p.setRotation(degrees(270));
         out.addPage(p);
       });
     } catch {
@@ -192,15 +206,16 @@ export async function compileGlobalDossierBytes(
   }
 
   if (extras.length) {
-    const extraBytes = await compileDossierBytes(extras, meta);
+    const extraBytes = await compileDossierBytes(extras, meta, { cover: false });
     const src2 = await PDFDocument.load(extraBytes);
     const copied2 = await out.copyPages(src2, src2.getPageIndices());
     copied2.forEach((p) => out.addPage(p));
   }
 
-  if (out.getPageCount() === 0) return await compileDossierBytes(extras, meta);
+  if (out.getPageCount() === 0) return await compileDossierBytes(extras, meta, { cover: false });
   return await out.save();
 }
+
 
 export const bytesToDataUri = (bytes: Uint8Array) => {
 
