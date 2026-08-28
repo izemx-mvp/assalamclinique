@@ -628,14 +628,22 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
 
   const generate = async () => {
     toast.loading("Compilation du dossier…", { id: "compile-global" });
-    const bytes = await compileGlobalDossierBytes(globalBytes, orderedExtras, {
-      title: `Dossier PEC ${ORG} — ${PATIENT}`,
-      patient: PATIENT,
-      intervention: interventionName,
-      organisme: ORG,
-      mode: "Prise en charge",
-      labels,
-    });
+    // Génération universelle : le dossier médical complet de référence est toujours compilé.
+    const reference = await fetchReferenceDossierBytes(referenceAsset.url);
+    const base = reference ?? globalBytes;
+    const bytes = await compileGlobalDossierBytes(
+      base,
+      orderedExtras,
+      {
+        title: `Dossier PEC ${ORG} — ${PATIENT}`,
+        patient: PATIENT,
+        intervention: interventionName,
+        organisme: ORG,
+        mode: "Prise en charge",
+        labels,
+      },
+      { rotateLast: scenario === "rotes" },
+    );
     const dataUri = bytesToDataUri(bytes);
     const items = await buildDossierItems(orderedExtras, labels);
     setCompiled(dataUri);
@@ -656,8 +664,13 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       setDossierNum(num);
     }
     toast.dismiss("compile-global");
-    toast.success("Dossier compilé — Demande de PEC pivotée à 270°");
+    toast.success(
+      scenario === "rotes"
+        ? "Dossier compilé — 2 documents redressés à 270°"
+        : "Dossier compilé — Demande de PEC pivotée à 270°",
+    );
   };
+
 
   const pdfName = `PEC_CNSS_Ouassim_BEN_MASSAOUD_${dossierNum ?? "DOS-2026-0000"}.pdf`;
 
