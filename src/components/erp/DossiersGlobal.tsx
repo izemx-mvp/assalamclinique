@@ -682,7 +682,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     }
     setAuditRan(true);
     setRunning(false);
-    if (missing.length === 0 && !anomalyActive)
+    if (missing.length === 0 && !anomalyActive && !orderIssue)
       toast.success(
         scenario === "ordre"
           ? "Dossier réorganisé et conforme"
