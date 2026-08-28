@@ -527,7 +527,7 @@ export const useErp = create<State & Actions>((set, get) => ({
       return { dossiers };
     }),
 
-  commitDossier: (statut, pdfData, items) => {
+  commitDossier: (statut, pdfData, items, extra) => {
     const newId = uid();
     set((st) => {
       const num = `DOS-2026-${String(st.dossiers.length + 1).padStart(4, "0")}`;
