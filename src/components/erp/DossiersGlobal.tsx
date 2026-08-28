@@ -1134,7 +1134,8 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
                 )}
 
 
-                {(missing.length > 0 || anomalyActive || orderIssue) && (
+                {(missing.length > 0 || anomalyActive || orderIssue || rotationBlock) && (
+
                   <div className="mt-2 flex justify-center">
                     <Button variant="secondary" className="rounded-xl" onClick={runAudit}>
                       <RefreshCcw className="size-4" /> Relancer le contrôle
