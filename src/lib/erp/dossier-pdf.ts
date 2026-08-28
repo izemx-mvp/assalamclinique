@@ -37,38 +37,48 @@ export type CompileMeta = {
 /**
  * Compile le dossier complet en PDF réel.
  * Les pages de la « Demande de PEC » sont réellement pivotées à 270° dans le flux binaire du PDF.
+ * `opts.cover = false` produit un PDF strictement composé des pages des documents
+ * (aucune page de garde ni en-tête textuel ajouté par le système).
  */
-export async function compileDossierBytes(scans: Scan[], meta: CompileMeta): Promise<Uint8Array> {
+export async function compileDossierBytes(
+  scans: Scan[],
+  meta: CompileMeta,
+  opts: { cover?: boolean } = {},
+): Promise<Uint8Array> {
+  const withCover = opts.cover !== false;
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = 595.28;
   const H = 841.89;
 
-  // Page de garde
-  doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text("CLINIQUE ASSALAM — Dossier d'intervention", 40, 40);
-  doc.setDrawColor(200);
-  doc.line(40, 50, 555, 50);
-  doc.setFontSize(18);
-  doc.setTextColor(20);
-  doc.text(meta.title, 40, 100);
-  doc.setFontSize(11);
-  const rows: [string, string][] = [
-    ["Patient", meta.patient],
-    ["Intervention", meta.intervention],
-    ["Organisme", meta.organisme],
-    ["Mode", meta.mode],
-    ["Pages compilées", String(scans.length)],
-    ["Date de compilation", new Date().toLocaleString("fr-FR")],
-  ];
-  rows.forEach(([k, v], r) => {
-    const y = 140 + r * 24;
-    doc.setTextColor(130);
-    doc.text(k, 40, y);
-    doc.setTextColor(30);
-    doc.text(String(v), 220, y);
-  });
+  if (withCover) {
+    // Page de garde
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text("CLINIQUE ASSALAM — Dossier d'intervention", 40, 40);
+    doc.setDrawColor(200);
+    doc.line(40, 50, 555, 50);
+    doc.setFontSize(18);
+    doc.setTextColor(20);
+    doc.text(meta.title, 40, 100);
+    doc.setFontSize(11);
+    const rows: [string, string][] = [
+      ["Patient", meta.patient],
+      ["Intervention", meta.intervention],
+      ["Organisme", meta.organisme],
+      ["Mode", meta.mode],
+      ["Pages compilées", String(scans.length)],
+      ["Date de compilation", new Date().toLocaleString("fr-FR")],
+    ];
+    rows.forEach(([k, v], r) => {
+      const y = 140 + r * 24;
+      doc.setTextColor(130);
+      doc.text(k, 40, y);
+      doc.setTextColor(30);
+      doc.text(String(v), 220, y);
+    });
+  }
+
 
   // Index (base 1 car la page 1 est la page de garde) des pages à pivoter réellement
   const rotate270: number[] = [];
