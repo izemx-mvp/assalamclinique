@@ -185,10 +185,11 @@ export async function compileGlobalDossierBytes(
   globalBytes: Uint8Array | null,
   extras: Scan[],
   meta: CompileMeta,
-  opts: { rotateLast?: boolean } = {},
+  opts: { rotateLast?: boolean; lastAngle?: number } = {},
 ): Promise<Uint8Array> {
   const { PDFDocument, degrees } = await import("pdf-lib");
   const out = await PDFDocument.create();
+  const lastAngle = opts.lastAngle ?? 180;
 
   if (globalBytes) {
     try {
@@ -197,7 +198,7 @@ export async function compileGlobalDossierBytes(
       const last = copied.length - 1;
       copied.forEach((p, i) => {
         if (i === 0) p.setRotation(degrees(270));
-        else if (opts.rotateLast && i === last) p.setRotation(degrees(270));
+        else if (opts.rotateLast && i === last) p.setRotation(degrees(lastAngle));
         out.addPage(p);
       });
     } catch {
