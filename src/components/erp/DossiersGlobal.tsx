@@ -564,6 +564,12 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
       toast.success("Carte CNSS validée — Patient = Assuré détecté");
     }
     if (pieceId === "note_conf") {
+      if (!isCleanNoteConfidentielle(file.name)) {
+        toast.error(
+          "Fichier refusé : seul un document nommé exactement « Note confidentielle » est accepté",
+        );
+        return;
+      }
       setNoteFixed(true);
       toast.success("Note confidentielle remplacée — relancez le contrôle");
     }
