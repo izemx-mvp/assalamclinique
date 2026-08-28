@@ -731,7 +731,7 @@ function GlobalWizard({ onExit }: { onExit: () => void }) {
     toast.dismiss("compile-global");
     toast.success(
       scenario === "rotes"
-        ? "Dossier compilé — 2 documents redressés à 270°"
+        ? "Dossier compilé — Demande de PEC 270° et dernier document 180°"
         : "Dossier compilé — Demande de PEC pivotée à 270°",
     );
   };
