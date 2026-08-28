@@ -17,7 +17,7 @@ const dataUriToBytes = (dataUri: string) => {
 export function PdfViewer({
   dataUri,
   className = "",
-  scale = 1.5,
+  scale = 1.6,
 }: {
   dataUri: string;
   className?: string;
@@ -26,24 +26,26 @@ export function PdfViewer({
   const hostRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [pageCount, setPageCount] = useState(0);
-  const [err, setErr] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    const host = hostRef.current;
-    if (!host) return;
-    host.innerHTML = "";
     setState("loading");
+    setPageCount(0);
 
     (async () => {
       try {
-        const pdfjs = await import("pdfjs-dist");
-        const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+        const worker = await import("pdfjs-dist/legacy/build/pdf.worker.mjs?url");
         pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
 
         const doc = await pdfjs.getDocument({ data: dataUriToBytes(dataUri) }).promise;
         if (cancelled) return;
+
+        const host = hostRef.current;
+        if (!host) return;
+        host.innerHTML = "";
         setPageCount(doc.numPages);
+        setState("ready");
 
         for (let n = 1; n <= doc.numPages; n++) {
           const page = await doc.getPage(n);
@@ -56,11 +58,9 @@ export function PdfViewer({
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
           host.appendChild(canvas);
-          await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+          await page.render({ canvasContext: ctx, viewport }).promise;
         }
-        if (!cancelled) setState("ready");
-      } catch (e) {
-        setErr(String(e));
+      } catch {
         if (!cancelled) setState("error");
       }
     })();
@@ -81,7 +81,7 @@ export function PdfViewer({
       {state === "error" && (
         <div className="grid h-full place-items-center gap-2 text-sm text-muted-foreground">
           <FileWarning className="size-8" />
-          Document illisible. {err}
+          Document illisible.
         </div>
       )}
       <div ref={hostRef} className={state === "ready" ? "" : "hidden"} />
