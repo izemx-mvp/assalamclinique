@@ -994,32 +994,6 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
             </div>
           )}
 
-          {!analyzing && scenario && importMode === "fichiers" && extras.length > 0 && (
-            <Panel title={`Pièces importées (${extras.length})`}>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {extras.map((s) => (
-                  <article key={s.id} className="glass-soft flex flex-col gap-2 rounded-xl p-3">
-                    <div className="grid h-28 place-items-center overflow-hidden rounded-lg bg-background/40">
-                      {s.mime.startsWith("image/") ? (
-                        <img
-                          src={s.url}
-                          alt={s.fileName}
-                          className="max-h-28 object-contain"
-                          style={{ transform: `rotate(${s.angle}deg)` }}
-                        />
-                      ) : (
-                        <FileText className="size-8 text-muted-foreground" />
-                      )}
-                    </div>
-                    <p className="truncate text-[11px]">{s.fileName}</p>
-                    <p className="truncate text-[10px] text-accent">
-                      {s.pieceId ? (labels[s.pieceId] ?? s.pieceId) : "Non classé"}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            </Panel>
-          )}
 
           {!analyzing && scenario && (
             <div className="glass flex flex-wrap items-center gap-2 rounded-2xl px-5 py-3 text-[11px]">
