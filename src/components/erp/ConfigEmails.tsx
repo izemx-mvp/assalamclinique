@@ -28,9 +28,8 @@ const PHASES: { key: EmailPhase; label: string }[] = [
 ];
 
 const ISSUES: { key: EmailIssue; label: string; tone: string }[] = [
-  { key: "ok", label: "🟢 Dossier conforme", tone: "text-success" },
+  { key: "ok", label: "🟢 Dossier conforme / validé", tone: "text-success" },
   { key: "ko", label: "🔴 Dossier non conforme", tone: "text-destructive" },
-  { key: "verif", label: "🟠 Dossier à vérifier", tone: "text-amber-400" },
 ];
 
 export function ConfigEmails() {
