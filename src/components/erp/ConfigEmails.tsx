@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   EMAIL_VARIABLES,
-  SCENARIOS,
+  scenarioKey,
   useAdmin,
-  type ScenarioKey,
+  type EmailIssue,
+  type EmailPhase,
 } from "@/store/admin-store";
 import { PageHeader, Panel, StatusPill } from "./ui-bits";
 import { cn } from "@/lib/utils";
@@ -21,9 +22,22 @@ const FREQUENCES = [
   "Toutes les heures",
 ];
 
+const PHASES: { key: EmailPhase; label: string }[] = [
+  { key: "PEC", label: "Phase 1 — Prise en charge (PEC)" },
+  { key: "EXPEDITION", label: "Phase 2 — Expédition du dossier" },
+];
+
+const ISSUES: { key: EmailIssue; label: string; tone: string }[] = [
+  { key: "ok", label: "🟢 Dossier conforme", tone: "text-success" },
+  { key: "ko", label: "🔴 Dossier non conforme", tone: "text-destructive" },
+  { key: "verif", label: "🟠 Dossier à vérifier", tone: "text-amber-400" },
+];
+
 export function ConfigEmails() {
   const ad = useAdmin();
-  const [key, setKey] = useState<ScenarioKey>("pec_ok");
+  const [phase, setPhase] = useState<EmailPhase>("PEC");
+  const [issue, setIssue] = useState<EmailIssue>("ok");
+  const key = scenarioKey(phase, issue);
   const sc = ad.emails.scenarios[key];
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
@@ -34,6 +48,7 @@ export function ConfigEmails() {
     ad.updateScenario(key, { body: sc.body.slice(0, start) + v + sc.body.slice(end) });
     toast.success(`Variable ${v} insérée`);
   };
+
 
   return (
     <div className="flex flex-col gap-5">
