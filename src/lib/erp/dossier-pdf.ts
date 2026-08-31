@@ -188,17 +188,48 @@ export async function fetchReferenceDossierBytes(url: string): Promise<Uint8Arra
 }
 
 
+/** Page de garde autonome (A4) insérée vers la fin du dossier compilé. */
+export async function buildCoverPageBytes(meta: CompileMeta): Promise<Uint8Array> {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  doc.text("CLINIQUE ASSALAM — Page de garde du dossier", 40, 40);
+  doc.setDrawColor(200);
+  doc.line(40, 50, 555, 50);
+  doc.setFontSize(18);
+  doc.setTextColor(20);
+  doc.text(meta.title, 40, 100);
+  doc.setFontSize(11);
+  const rows: [string, string][] = [
+    ["Patient", meta.patient],
+    ["Intervention", meta.intervention],
+    ["Organisme", meta.organisme],
+    ["Mode", meta.mode],
+    ["Date de compilation", new Date().toLocaleString("fr-FR")],
+  ];
+  rows.forEach(([k, v], r) => {
+    const y = 140 + r * 24;
+    doc.setTextColor(130);
+    doc.text(k, 40, y);
+    doc.setTextColor(30);
+    doc.text(String(v), 220, y);
+  });
+  return new Uint8Array(doc.output("arraybuffer") as ArrayBuffer);
+}
+
 /**
  * Compilation du sous-module « ingestion de dossier global ».
- * Le PDF final ne contient QUE les pages réelles des documents (aucune page de garde) :
+ * Le PDF final ne contient QUE les pages réelles des documents :
  * la 1ère page (Demande de PEC) est pivotée à 270° dans le flux binaire, et,
  * si `rotateLast`, la dernière page (Carte mutuelle) l'est également.
+ * `coverAtEnd` insère la page de garde vers la fin du document.
  */
 export async function compileGlobalDossierBytes(
   globalBytes: Uint8Array | null,
   extras: Scan[],
   meta: CompileMeta,
-  opts: { rotateLast?: boolean; lastAngle?: number } = {},
+  opts: { rotateLast?: boolean; lastAngle?: number; coverAtEnd?: boolean } = {},
 ): Promise<Uint8Array> {
   const { PDFDocument, degrees } = await import("pdf-lib");
   const out = await PDFDocument.create();
@@ -227,8 +258,23 @@ export async function compileGlobalDossierBytes(
   }
 
   if (out.getPageCount() === 0) return await compileDossierBytes(extras, meta, { cover: false });
+
+  // Page de garde positionnée vers la fin du document (avant la dernière pièce).
+  if (opts.coverAtEnd) {
+    try {
+      const coverDoc = await PDFDocument.load(await buildCoverPageBytes(meta));
+      const [coverPage] = await out.copyPages(coverDoc, [0]);
+      if (coverPage) {
+        out.insertPage(Math.max(0, out.getPageCount() - 1), coverPage);
+      }
+    } catch {
+      /* page de garde non bloquante */
+    }
+  }
+
   return await out.save();
 }
+
 
 
 export const bytesToDataUri = (bytes: Uint8Array) => {

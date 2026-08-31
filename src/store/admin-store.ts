@@ -38,7 +38,16 @@ export type CoverConfig = {
   published: boolean;
 };
 
-export type ScenarioKey = "pec_ok" | "pec_ko" | "exp_ok" | "exp_ko";
+export type ScenarioKey =
+  | "pec_ok"
+  | "pec_ko"
+  | "pec_verif"
+  | "exp_ok"
+  | "exp_ko"
+  | "exp_verif";
+
+export type EmailPhase = "PEC" | "EXPEDITION";
+export type EmailIssue = "ok" | "ko" | "verif";
 
 export type EmailScenario = {
   to: string[];
@@ -52,6 +61,16 @@ export type EmailsConfig = {
   frequency: string;
   scenarios: Record<ScenarioKey, EmailScenario>;
 };
+
+/** Identité et cachet officiel de l'établissement. */
+export type CliniqueConfig = {
+  nom: string;
+  ice: string;
+  if: string;
+  patente: string;
+  cachet: string | null;
+};
+
 
 export type Praticien = {
   id: string;
@@ -92,9 +111,22 @@ export const MODULES_DROITS = [
 export const SCENARIOS: { key: ScenarioKey; label: string }[] = [
   { key: "pec_ok", label: "PEC Validée" },
   { key: "pec_ko", label: "PEC Non conforme" },
+  { key: "pec_verif", label: "PEC À vérifier" },
   { key: "exp_ok", label: "Expédition Validée" },
   { key: "exp_ko", label: "Expédition Non conforme" },
+  { key: "exp_verif", label: "Expédition À vérifier" },
 ];
+
+/** Clé de scénario à partir de la phase et de l'issue du contrôle. */
+export const scenarioKey = (phase: EmailPhase, issue: EmailIssue): ScenarioKey =>
+  `${phase === "PEC" ? "pec" : "exp"}_${issue === "ok" ? "ok" : issue === "ko" ? "ko" : "verif"}` as ScenarioKey;
+
+/** Clé de scénario correspondant à l'état d'un dossier audité. */
+export const scenarioKeyForEtat = (
+  mode: "PEC" | "EXPEDITION",
+  etat: "Conforme" | "Non conforme" | "À vérifier",
+): ScenarioKey =>
+  scenarioKey(mode, etat === "Conforme" ? "ok" : etat === "Non conforme" ? "ko" : "verif");
 
 export const EMAIL_VARIABLES = [
   "{PATIENT}",
@@ -104,8 +136,10 @@ export const EMAIL_VARIABLES = [
   "{STATUT_GLOBAL}",
   "{PIECES_MANQUANTES}",
   "{ANOMALIES_DETECTEES}",
+  "{ELEMENTS_A_VERIFIER}",
   "{CORRECTIONS_AUTOMATIQUES}",
 ];
+
 
 export const COVER_VARIABLES = [
   "{Nom Patient}",
@@ -214,7 +248,14 @@ const INITIAL_EMAILS: EmailsConfig = {
       body:
         "Bonjour,\n\nLe dossier {NUM_DOSSIER} ({PATIENT} — {INTERVENTION}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
     },
+    pec_verif: {
+      to: ["administration@clinique-assalam.ma"],
+      subject: "Dossier PEC à vérifier — {NUM_DOSSIER} — {PATIENT}",
+      body:
+        "Bonjour,\n\nLe contrôle IA du dossier {NUM_DOSSIER} ({PATIENT} — {INTERVENTION}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_MANQUANTES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
+    },
     exp_ok: {
+
       to: ["expedition@clinique-assalam.ma"],
       subject: "Expédition {NUM_DOSSIER} — {PATIENT} — {ORGANISME}",
       body:
@@ -226,8 +267,23 @@ const INITIAL_EMAILS: EmailsConfig = {
       body:
         "Bonjour,\n\nLe dossier d'expédition {NUM_DOSSIER} ({PATIENT}) est NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nClinique Assalam",
     },
+    exp_verif: {
+      to: ["administration@clinique-assalam.ma"],
+      subject: "Dossier d'expédition à vérifier — {NUM_DOSSIER} — {PATIENT}",
+      body:
+        "Bonjour,\n\nLe contrôle IA du dossier d'expédition {NUM_DOSSIER} ({PATIENT}) comporte des éléments non déterminés.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nClinique Assalam",
+    },
   },
 };
+
+const INITIAL_CLINIQUE: CliniqueConfig = {
+  nom: "Clinique Assalam",
+  ice: "001789456000027",
+  if: "40219876",
+  patente: "34561209",
+  cachet: null,
+};
+
 
 const INITIAL_PRATICIENS: Praticien[] = [
   {
@@ -307,11 +363,13 @@ type State = {
   regles: RegleIA[];
   pagesGarde: { PEC: CoverConfig; EXPEDITION: CoverConfig };
   emails: EmailsConfig;
+  clinique: CliniqueConfig;
   praticiens: Praticien[];
   utilisateurs: Utilisateur[];
   /** Organismes associés par intervention (undefined = tous les organismes actifs). */
   interventionOrgs: Record<string, string[]>;
 };
+
 
 type Actions = {
   // organismes
@@ -334,6 +392,9 @@ type Actions = {
   // emails
   updateEmails: (p: Partial<Omit<EmailsConfig, "scenarios">>) => void;
   updateScenario: (key: ScenarioKey, p: Partial<EmailScenario>) => void;
+  // clinique
+  updateClinique: (p: Partial<CliniqueConfig>) => void;
+
   // praticiens
   addPraticien: (p: Omit<Praticien, "id" | "createdAt" | "lastUsed">) => void;
   updatePraticien: (id: string, p: Partial<Praticien>) => void;
@@ -357,6 +418,7 @@ const FALLBACK: State = {
     ),
   },
   emails: INITIAL_EMAILS,
+  clinique: INITIAL_CLINIQUE,
   praticiens: INITIAL_PRATICIENS,
   utilisateurs: INITIAL_UTILISATEURS,
   interventionOrgs: {},
@@ -377,6 +439,7 @@ function load(): State {
         ...(p.emails ?? {}),
         scenarios: { ...FALLBACK.emails.scenarios, ...(p.emails?.scenarios ?? {}) },
       },
+      clinique: { ...FALLBACK.clinique, ...(p.clinique ?? {}) },
       praticiens: p.praticiens?.length ? p.praticiens : FALLBACK.praticiens,
       utilisateurs: p.utilisateurs?.length ? p.utilisateurs : FALLBACK.utilisateurs,
       interventionOrgs: p.interventionOrgs ?? {},
@@ -396,6 +459,7 @@ function persist(s: State) {
         regles: s.regles,
         pagesGarde: s.pagesGarde,
         emails: s.emails,
+        clinique: s.clinique,
         praticiens: s.praticiens,
         utilisateurs: s.utilisateurs,
         interventionOrgs: s.interventionOrgs,
@@ -405,6 +469,7 @@ function persist(s: State) {
     /* ignoré */
   }
 }
+
 
 export const useAdmin = create<State & Actions>((set, get) => {
   const commit = (patch: Partial<State>) =>
@@ -511,6 +576,11 @@ export const useAdmin = create<State & Actions>((set, get) => {
       const e = get().emails;
       commit({ emails: { ...e, scenarios: { ...e.scenarios, [key]: { ...e.scenarios[key], ...p } } } });
     },
+
+    /* --- Clinique --- */
+    updateClinique: (p) => commit({ clinique: { ...get().clinique, ...p } }),
+
+
 
     /* --- Praticiens --- */
     addPraticien: (p) =>
