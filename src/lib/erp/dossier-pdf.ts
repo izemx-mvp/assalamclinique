@@ -259,18 +259,17 @@ export async function compileGlobalDossierBytes(
 
   if (out.getPageCount() === 0) return await compileDossierBytes(extras, meta, { cover: false });
 
-  // Page de garde positionnée vers la fin du document (avant la dernière pièce).
+  // Page de garde unique, strictement en dernière page du document.
   if (opts.coverAtEnd) {
     try {
       const coverDoc = await PDFDocument.load(await buildCoverPageBytes(meta));
       const [coverPage] = await out.copyPages(coverDoc, [0]);
-      if (coverPage) {
-        out.insertPage(Math.max(0, out.getPageCount() - 1), coverPage);
-      }
+      if (coverPage) out.addPage(coverPage);
     } catch {
       /* page de garde non bloquante */
     }
   }
+
 
   return await out.save();
 }
