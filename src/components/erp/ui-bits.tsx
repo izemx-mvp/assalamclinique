@@ -147,3 +147,60 @@ export function FilterInput({
     />
   );
 }
+
+/** En-tête d'écran glassmorphique (icône + titre + sous-titre + action). */
+export function PageHeader({
+  icon,
+  title,
+  subtitle,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="glass flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4">
+      <div className="flex items-center gap-3">
+        <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">{title}</p>
+          {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+/** Pilule d'état colorée. */
+export function StatusPill({
+  tone,
+  children,
+}: {
+  tone: "green" | "red" | "orange" | "blue" | "gray" | "violet" | "cyan";
+  children: ReactNode;
+}) {
+  const tones: Record<string, string> = {
+    green: "bg-success/15 text-success border-success/30",
+    red: "bg-destructive/15 text-destructive border-destructive/30",
+    orange: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    blue: "bg-primary/15 text-accent border-primary/30",
+    cyan: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+    violet: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+    gray: "bg-muted/40 text-muted-foreground border-border",
+  };
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
+        tones[tone],
+      )}
+    >
+      {children}
+    </span>
+  );
+}
