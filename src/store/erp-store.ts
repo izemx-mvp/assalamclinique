@@ -44,6 +44,16 @@ export type DossierItem = {
   preview?: string;
 };
 
+/** Synthèse structurée fournie par l'audit IA (persistée pour consultation). */
+export type AuditSummary = {
+  missing: string[];
+  rules: string[];
+  pieces: string[];
+  infos: string[];
+  detail: string;
+  corrections: string[];
+};
+
 export type DossierRecord = {
   id: string;
   num: string;
@@ -55,6 +65,14 @@ export type DossierRecord = {
   createdBy: string;
   statut: "Brouillon" | "Audité" | "Transmis";
   pages: number;
+  /** État de conformité déterminé par l'IA. */
+  etat?: "Conforme" | "Non conforme" | "À vérifier";
+  /** Statut d'envoi de l'e-mail de transmission. */
+  envoye?: boolean;
+  sentAt?: string;
+  sentTo?: string;
+  /** Synthèse de l'audit IA. */
+  audit?: AuditSummary;
   /** PDF compilé complet (data URI base64), persisté pour le téléchargement depuis l'historique. */
   pdfData?: string;
   /** Suite ordonnée exacte des pièces importées lors de la création. */
@@ -64,6 +82,7 @@ export type DossierRecord = {
   /** Nom de fichier PDF imposé (sous-module global). */
   fileName?: string;
 };
+
 
 
 
@@ -168,6 +187,10 @@ const INITIAL_DOSSIERS: DossierRecord[] = [
     createdBy: "Dr. Alami",
     statut: "Transmis",
     pages: 8,
+    etat: "Conforme",
+    envoye: true,
+    sentAt: "12/03/2026 14:20",
+    sentTo: "pec@cnss.ma",
   },
   {
     id: uid(),
@@ -180,6 +203,17 @@ const INITIAL_DOSSIERS: DossierRecord[] = [
     createdBy: "Yassine E.",
     statut: "Audité",
     pages: 11,
+    etat: "À vérifier",
+    envoye: false,
+    audit: {
+      missing: [],
+      rules: ["Lisibilité du cachet du praticien"],
+      pieces: ["Note confidentielle"],
+      infos: ["Signature du praticien floue — non reconnue"],
+      detail:
+        "L'IA n'a pas pu confirmer l'authenticité de la signature apposée sur la note confidentielle.",
+      corrections: [],
+    },
   },
   {
     id: uid(),
@@ -192,8 +226,19 @@ const INITIAL_DOSSIERS: DossierRecord[] = [
     createdBy: "Admin SI",
     statut: "Brouillon",
     pages: 4,
+    etat: "Non conforme",
+    envoye: false,
+    audit: {
+      missing: ["Carte mutuelle"],
+      rules: ["Présence obligatoire de la carte d'immatriculation de l'organisme"],
+      pieces: ["Carte mutuelle"],
+      infos: [],
+      detail: "La carte d'immatriculation de l'organisme est absente du dossier transmis.",
+      corrections: [],
+    },
   },
 ];
+
 
 const STORAGE_KEY = "assalam-erp-dossiers";
 

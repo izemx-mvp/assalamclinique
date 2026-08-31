@@ -161,6 +161,59 @@ export function CachetsSignatures() {
       />
 
       <Panel
+        title="Cachet officiel de la clinique"
+        subtitle="Identité légale apposée sur la page de garde et les courriers de transmission"
+        action={
+          <StatusPill tone={ad.clinique.cachet ? "green" : "orange"}>
+            {ad.clinique.cachet ? "Cachet enregistré" : "Cachet manquant"}
+          </StatusPill>
+        }
+      >
+        <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-xs text-muted-foreground">
+              Dénomination de l'établissement
+              <Input
+                value={ad.clinique.nom}
+                onChange={(e) => ad.updateClinique({ nom: e.target.value })}
+                className="mt-1"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              ICE
+              <Input
+                value={ad.clinique.ice}
+                onChange={(e) => ad.updateClinique({ ice: e.target.value })}
+                className="mt-1"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Identifiant fiscal (IF)
+              <Input
+                value={ad.clinique.if}
+                onChange={(e) => ad.updateClinique({ if: e.target.value })}
+                className="mt-1"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Patente
+              <Input
+                value={ad.clinique.patente}
+                onChange={(e) => ad.updateClinique({ patente: e.target.value })}
+                className="mt-1"
+              />
+            </label>
+          </div>
+          <AssetSlot
+            label="Cachet de la clinique"
+            value={ad.clinique.cachet}
+            onChange={(v) => ad.updateClinique({ cachet: v })}
+          />
+        </div>
+      </Panel>
+
+
+      <Panel
         title="Bibliothèque des praticiens"
         subtitle={`${ad.praticiens.filter((p) => p.active).length} praticiens actifs sur ${ad.praticiens.length}`}
         action={

@@ -84,7 +84,17 @@ export function isDossierCompletFile(name: string): boolean {
 export { NOTE_REJECT_RE };
 
 /** Scénarios de simulation IA du sous-module « dossier global ». */
-export type GlobalScenario = "complet" | "manquant" | "ordre" | "errone" | "rotes";
+export type GlobalScenario = "complet" | "manquant" | "ordre" | "errone" | "rotes" | "verifier";
+
+/** État de conformité attribué par l'IA. */
+export type EtatDossier = "Conforme" | "Non conforme" | "À vérifier";
+
+/** Mappe le scénario simulé sur l'état de conformité affiché. */
+export function etatOfScenario(sc: GlobalScenario): EtatDossier {
+  if (sc === "verifier") return "À vérifier";
+  if (sc === "errone" || sc === "manquant") return "Non conforme";
+  return "Conforme";
+}
 
 /**
  * Reconnaît le scénario de test à partir du nom du dossier global déposé.
@@ -92,11 +102,13 @@ export type GlobalScenario = "complet" | "manquant" | "ordre" | "errone" | "rote
  */
 export function detectScenario(name: string): GlobalScenario {
   const n = normalize(name).toLowerCase();
+  if (/(a|à)\s*v(e|é)rifier/.test(n)) return "verifier";
   if (/rot(e|é)s?\b|2\s*documents?\s*rot|documents?\s*rot/.test(n)) return "rotes";
   if (/ordre\s*incorrect|desordre|désordre/.test(n)) return "ordre";
   if (/erron|erreur|anomalie/.test(n)) return "errone";
   if (/manquant|incomplet/.test(n)) return "manquant";
   return "complet";
 }
+
 
 
