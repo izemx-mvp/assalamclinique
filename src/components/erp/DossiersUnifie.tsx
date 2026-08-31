@@ -793,84 +793,14 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   return (
     <div className="flex flex-col gap-5">
       <div className="glass rounded-2xl px-5 py-4">
-        <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-          {step > 1 && (
-            <Button
-              variant="secondary"
-              className="rounded-xl"
-              onClick={() => setStep((s) => s - 1)}
-            >
-              Précédent
-            </Button>
-          )}
-          {step === 1 && (
-            <Button
-              className="rounded-xl"
-              disabled={!scenario || analyzing}
-              onClick={() => setStep(2)}
-            >
-              Suivant
-            </Button>
-          )}
-          {step === 2 && (
-            <>
-              <Button className="rounded-xl" disabled={running} onClick={runAudit}>
-                <Sparkles className="size-4" />
-                {auditRan ? "Relancer l'analyse" : "Lancer l'analyse"}
-              </Button>
-              {showAdminMail && (
-                <Button
-                  className="rounded-xl bg-amber-500 text-white hover:bg-amber-600"
-                  disabled={mailSent}
-                  onClick={sendAdminMail}
-                >
-                  <Mail className="size-4" />
-                  {mailSent ? "E-mail envoyé" : "Envoyer l'e-mail à l'administration"}
-                </Button>
-              )}
-              <Button
-                className="rounded-xl"
-                disabled={blocked}
-                onClick={() => setStep(3)}
-                title={blocked ? "Étape réservée aux dossiers conformes" : undefined}
-              >
-                Suivant
-              </Button>
-            </>
-          )}
-          {step === 3 && (
-            <>
-              <Button className="rounded-xl" onClick={generate}>
-                <FileText className="size-4" /> Générer le dossier
-              </Button>
-              <Button
-                variant="secondary"
-                className="rounded-xl"
-                disabled={!compiled}
-                onClick={download}
-              >
-                <Download className="size-4" /> Télécharger
-              </Button>
-              <Button
-                className="rounded-xl"
-                disabled={!compiled || transmitted}
-                onClick={() => {
-                  if (!dossierId) return;
-                  const res = sendDossierEmail(dossierId, "Conforme");
-                  setTransmitted(true);
-                  toast.success(`Dossier transmis (${res?.to ?? ORG})`);
-                }}
-              >
-                <Send className="size-4" /> Transmettre
-              </Button>
-            </>
-          )}
-          <Button className="rounded-xl bg-blue-600 text-white hover:bg-blue-700" onClick={onExit}>
-            <ArrowLeft className="size-4" /> Retour
-          </Button>
-        </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              onClick={onExit}
+            >
+              <ArrowLeft className="size-4" /> Retour
+            </Button>
             <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
               <FileStack className="size-5" />
             </span>
@@ -881,9 +811,40 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
               </p>
             </div>
           </div>
-          {auditRan && etat && <EtatBadge etat={etat} />}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {auditRan && etat && <EtatBadge etat={etat} />}
+            {step > 1 && (
+              <Button
+                variant="secondary"
+                className="rounded-xl"
+                onClick={() => setStep((s) => s - 1)}
+              >
+                Précédent
+              </Button>
+            )}
+            {step === 1 && (
+              <Button
+                className="rounded-xl"
+                disabled={!scenario || analyzing}
+                onClick={() => setStep(2)}
+              >
+                Suivant
+              </Button>
+            )}
+            {step === 2 && (
+              <Button
+                className="rounded-xl"
+                disabled={blocked}
+                onClick={() => setStep(3)}
+                title={blocked ? "Étape réservée aux dossiers conformes" : undefined}
+              >
+                Suivant
+              </Button>
+            )}
+          </div>
         </div>
       </div>
+
 
       <div className="glass flex flex-wrap items-center justify-center gap-3 rounded-2xl px-5 py-3">
         {STEPS.map((s, i) => (
