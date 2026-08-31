@@ -44,9 +44,9 @@ import {
   downloadDataUri,
   fetchReferenceDossierBytes,
 } from "@/lib/erp/dossier-pdf";
-import { sendDossierEmail } from "@/lib/erp/notify";
+import { renderTemplate, sendDossierEmail } from "@/lib/erp/notify";
 import referenceAsset from "@/assets/dossier-reference.pdf";
-import { useAdmin } from "@/store/admin-store";
+import { scenarioKeyForEtat, useAdmin } from "@/store/admin-store";
 import { useErp, type AuditSummary, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel, Segmented, StatusPill } from "./ui-bits";
 import { PdfViewer } from "./PdfViewer";
@@ -493,6 +493,8 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   const [dossierNum, setDossierNum] = useState<string | null>(null);
   const [transmitted, setTransmitted] = useState(false);
   const [mailSent, setMailSent] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
+
 
   const globalRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
@@ -786,91 +788,33 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   };
 
   const blocked = !auditRan || etat !== "Conforme";
-  const showAdminMail = auditRan && (etat === "Non conforme" || etat === "À vérifier");
+
+  const admin = useAdmin();
+  const mailPreview = useMemo(() => {
+    const record = dossierId ? st.dossiers.find((d) => d.id === dossierId) : null;
+    if (!record || !etat) return { to: "—", subject: "—", body: "—" };
+    const sc = admin.emails.scenarios[scenarioKeyForEtat(record.mode, etat)];
+    return {
+      to: sc.to.join(", "),
+      subject: renderTemplate(sc.subject, record, interventionName),
+      body: renderTemplate(sc.body, record, interventionName),
+    };
+  }, [admin.emails.scenarios, dossierId, etat, interventionName, st.dossiers]);
+
 
   /* ------------------------------ Rendu -------------------------------- */
 
   return (
     <div className="flex flex-col gap-5">
       <div className="glass rounded-2xl px-5 py-4">
-        <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
-          {step > 1 && (
-            <Button
-              variant="secondary"
-              className="rounded-xl"
-              onClick={() => setStep((s) => s - 1)}
-            >
-              Précédent
-            </Button>
-          )}
-          {step === 1 && (
-            <Button
-              className="rounded-xl"
-              disabled={!scenario || analyzing}
-              onClick={() => setStep(2)}
-            >
-              Suivant
-            </Button>
-          )}
-          {step === 2 && (
-            <>
-              <Button className="rounded-xl" disabled={running} onClick={runAudit}>
-                <Sparkles className="size-4" />
-                {auditRan ? "Relancer l'analyse" : "Lancer l'analyse"}
-              </Button>
-              {showAdminMail && (
-                <Button
-                  className="rounded-xl bg-amber-500 text-white hover:bg-amber-600"
-                  disabled={mailSent}
-                  onClick={sendAdminMail}
-                >
-                  <Mail className="size-4" />
-                  {mailSent ? "E-mail envoyé" : "Envoyer l'e-mail à l'administration"}
-                </Button>
-              )}
-              <Button
-                className="rounded-xl"
-                disabled={blocked}
-                onClick={() => setStep(3)}
-                title={blocked ? "Étape réservée aux dossiers conformes" : undefined}
-              >
-                Suivant
-              </Button>
-            </>
-          )}
-          {step === 3 && (
-            <>
-              <Button className="rounded-xl" onClick={generate}>
-                <FileText className="size-4" /> Générer le dossier
-              </Button>
-              <Button
-                variant="secondary"
-                className="rounded-xl"
-                disabled={!compiled}
-                onClick={download}
-              >
-                <Download className="size-4" /> Télécharger
-              </Button>
-              <Button
-                className="rounded-xl"
-                disabled={!compiled || transmitted}
-                onClick={() => {
-                  if (!dossierId) return;
-                  const res = sendDossierEmail(dossierId, "Conforme");
-                  setTransmitted(true);
-                  toast.success(`Dossier transmis (${res?.to ?? ORG})`);
-                }}
-              >
-                <Send className="size-4" /> Transmettre
-              </Button>
-            </>
-          )}
-          <Button className="rounded-xl bg-blue-600 text-white hover:bg-blue-700" onClick={onExit}>
-            <ArrowLeft className="size-4" /> Retour
-          </Button>
-        </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+              onClick={onExit}
+            >
+              <ArrowLeft className="size-4" /> Retour
+            </Button>
             <span className="glow-ring grid size-10 shrink-0 place-items-center rounded-xl bg-primary/25 text-accent">
               <FileStack className="size-5" />
             </span>
@@ -881,9 +825,40 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
               </p>
             </div>
           </div>
-          {auditRan && etat && <EtatBadge etat={etat} />}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {auditRan && etat && <EtatBadge etat={etat} />}
+            {step > 1 && (
+              <Button
+                variant="secondary"
+                className="rounded-xl"
+                onClick={() => setStep((s) => s - 1)}
+              >
+                Précédent
+              </Button>
+            )}
+            {step === 1 && (
+              <Button
+                className="rounded-xl"
+                disabled={!scenario || analyzing}
+                onClick={() => setStep(2)}
+              >
+                Suivant
+              </Button>
+            )}
+            {step === 2 && (
+              <Button
+                className="rounded-xl"
+                disabled={blocked}
+                onClick={() => setStep(3)}
+                title={blocked ? "Étape réservée aux dossiers conformes" : undefined}
+              >
+                Suivant
+              </Button>
+            )}
+          </div>
         </div>
       </div>
+
 
       <div className="glass flex flex-wrap items-center justify-center gap-3 rounded-2xl px-5 py-3">
         {STEPS.map((s, i) => (
@@ -1088,32 +1063,33 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
 
       {step === 2 && (
         <div className="flex flex-col gap-5">
-          <Panel
-            title="Journal d'Audit IA"
-            action={
-              <span className="text-[11px] text-muted-foreground">
-                {auditRan ? "Contrôle effectué" : "Contrôle non lancé"}
-              </span>
-            }
-          >
-            {log.length === 0 ? (
-              <p className="glass-soft rounded-2xl px-4 py-10 text-center text-sm text-muted-foreground">
-                En attente du lancement de l'analyse IA…
-              </p>
-            ) : (
-              <ol className="relative flex flex-col gap-3 pl-6">
-                <span className="absolute top-2 bottom-2 left-2 w-px bg-border" />
-                {log.map((s, i) => (
-                  <AuditStepCard key={s.id} step={s} index={i} />
-                ))}
-              </ol>
-            )}
-          </Panel>
-
           {auditRan && etat && (
             <Panel
               title="Résultats et synthèse du contrôle"
-              action={<EtatBadge etat={etat} />}
+              action={
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <EtatBadge etat={etat} />
+                  {etat !== "Conforme" && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        className="rounded-xl"
+                        disabled={running}
+                        onClick={runAudit}
+                      >
+                        <Sparkles className="size-4" /> Relancer le contrôle
+                      </Button>
+                      <Button
+                        className="rounded-xl bg-amber-500 text-white hover:bg-amber-600"
+                        onClick={() => setMailOpen(true)}
+                      >
+                        <Mail className="size-4" />
+                        {mailSent ? "E-mail envoyé" : "Envoyer l'e-mail à l'administration"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              }
             >
               <div className="flex flex-col gap-3">
                 {etat === "Conforme" && (
@@ -1170,19 +1146,56 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
                 {etat !== "Conforme" && (
                   <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-xs text-amber-400">
                     L'étape « Aperçu et Transmission » est réservée aux dossiers conformes. Utilisez
-                    le bouton « Envoyer l'e-mail à l'administration » en haut de l'écran.
+                    le bouton « Envoyer l'e-mail à l'administration » ci-dessus.
                   </p>
                 )}
               </div>
             </Panel>
           )}
+
+          <Panel
+            title="Journal d'Audit IA"
+            action={
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {auditRan ? "Contrôle effectué" : "Contrôle non lancé"}
+                </span>
+                {log.length > 0 && (
+                  <Button className="rounded-xl" disabled={running} onClick={runAudit}>
+                    <Sparkles className="size-4" />
+                    {auditRan ? "Relancer l'analyse" : "Lancer l'analyse"}
+                  </Button>
+                )}
+              </div>
+            }
+          >
+            {log.length === 0 ? (
+              <div className="glass-soft flex flex-col items-center gap-3 rounded-2xl px-4 py-10 text-center">
+                <p className="text-sm text-muted-foreground">
+                  En attente du lancement de l'analyse IA…
+                </p>
+                <Button className="rounded-xl" disabled={running} onClick={runAudit}>
+                  <Sparkles className="size-4" /> Lancer l'analyse
+                </Button>
+              </div>
+            ) : (
+              <ol className="relative flex flex-col gap-3 pl-6">
+                <span className="absolute top-2 bottom-2 left-2 w-px bg-border" />
+                {log.map((s, i) => (
+                  <AuditStepCard key={s.id} step={s} index={i} />
+                ))}
+              </ol>
+            )}
+          </Panel>
         </div>
       )}
 
       {step === 3 && (
         <Panel
           title="Aperçu et Transmission"
-          subtitle={compiled ? pdfName : "Générez le dossier compilé (page de garde en fin de document)"}
+          subtitle={
+            compiled ? pdfName : "Générez le dossier compilé (page de garde en fin de document)"
+          }
         >
           <div className="glass-soft grid min-h-[420px] place-items-center overflow-hidden rounded-2xl p-3">
             {compiled ? (
@@ -1194,13 +1207,79 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
                 <FileText className="size-14 text-muted-foreground/60" />
                 <p className="text-sm font-medium">Aucun dossier compilé</p>
                 <p className="text-xs text-muted-foreground">
-                  Cliquez sur « Générer le dossier » en haut de l'écran
+                  Cliquez sur « Générer le dossier » ci-dessous
                 </p>
               </div>
             )}
           </div>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            <Button className="rounded-xl" onClick={generate}>
+              <FileText className="size-4" /> {compiled ? "Régénérer le dossier" : "Générer le dossier"}
+            </Button>
+            <Button
+              variant="secondary"
+              className="rounded-xl"
+              disabled={!compiled}
+              onClick={download}
+            >
+              <Download className="size-4" /> Télécharger le PDF
+            </Button>
+            <Button
+              className="rounded-xl"
+              disabled={!compiled || transmitted}
+              onClick={() => {
+                if (!dossierId) return;
+                const res = sendDossierEmail(dossierId, "Conforme");
+                setTransmitted(true);
+                toast.success(`Dossier transmis (${res?.to ?? ORG})`);
+              }}
+            >
+              <Send className="size-4" /> Transmettre
+            </Button>
+          </div>
         </Panel>
       )}
+
+      <Dialog open={mailOpen} onOpenChange={setMailOpen}>
+        <DialogContent className="glass max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Notification à l'administration</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 text-sm">
+            <div className="glass-soft rounded-xl px-3 py-2">
+              <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                Destinataire(s)
+              </p>
+              <p className="mt-1 text-xs text-accent">{mailPreview.to}</p>
+            </div>
+            <div className="glass-soft rounded-xl px-3 py-2">
+              <p className="text-[11px] tracking-wide text-muted-foreground uppercase">Objet</p>
+              <p className="mt-1 text-xs">{mailPreview.subject}</p>
+            </div>
+            <div className="glass-soft max-h-[40vh] overflow-auto rounded-xl px-3 py-2">
+              <p className="text-[11px] tracking-wide text-muted-foreground uppercase">Message</p>
+              <pre className="mt-1 font-sans text-xs whitespace-pre-wrap text-foreground/90">
+                {mailPreview.body}
+              </pre>
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <Button variant="secondary" className="rounded-xl" onClick={() => setMailOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              className="rounded-xl bg-amber-500 text-white hover:bg-amber-600"
+              onClick={() => {
+                sendAdminMail();
+                setMailOpen(false);
+              }}
+            >
+              <Mail className="size-4" /> Envoyer l'e-mail
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
