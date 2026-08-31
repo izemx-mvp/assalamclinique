@@ -37,6 +37,7 @@ import {
   etatOfScenario,
   type EtatDossier,
   type GlobalScenario,
+  looksLikeCarteMutuelle,
 } from "@/lib/erp/detect";
 import {
   buildDossierItems,
