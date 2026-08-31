@@ -493,6 +493,8 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   const [dossierNum, setDossierNum] = useState<string | null>(null);
   const [transmitted, setTransmitted] = useState(false);
   const [mailSent, setMailSent] = useState(false);
+  const [mailOpen, setMailOpen] = useState(false);
+
 
   const globalRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
