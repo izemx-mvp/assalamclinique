@@ -497,24 +497,33 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   const [mailOpen, setMailOpen] = useState(false);
 
 
-  const globalRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
 
-  /** Pièces manquantes : cas global « Dossier manquant » → CIN assuré ; sinon matching des 6 fichiers. */
+  /** Un dossier global déposé (nom contenant « dossier ») pilote le scénario IA. */
+  const globalDossierName = useMemo(
+    () => imported.find((n) => /dossier/i.test(n)) ?? null,
+    [imported],
+  );
+  /** Une carte mutuelle déposée séparément complète un dossier global incomplet. */
+  const carteApportee = useMemo(
+    () => imported.some((n) => !/dossier/i.test(n) && looksLikeCarteMutuelle(n)),
+    [imported],
+  );
+
+  /**
+   * Pièces manquantes :
+   * — dossier global incomplet → carte mutuelle + CIN assuré (sauf carte apportée séparément) ;
+   * — dépôts pièce par pièce → matching strict des 6 documents attendus.
+   */
   const missing: string[] = useMemo(() => {
-    if (importMode === "fichiers") {
-      if (!extras.length) return [];
-      return missingFromFiles(
-        extras.map((s) => s.fileName),
-        required,
-      );
+    if (!imported.length) return [];
+    if (globalDossierName) {
+      if (detectScenario(globalDossierName) !== "manquant" || carteApportee) return [];
+      const ids = required.filter((id) => id === "carte_mutuelle" || id === "cin_assure");
+      return ids.length ? ids : ["carte_mutuelle", "cin_assure"];
     }
-    if (scenario === "manquant") {
-      const cin = required.filter((id) => id === "cin_assure");
-      return cin.length ? cin : ["cin_assure"];
-    }
-    return [];
-  }, [importMode, extras, required, scenario]);
+    return missingFromFiles(imported, required);
+  }, [imported, globalDossierName, carteApportee, required]);
 
   const etat: EtatDossier | null = !scenario
     ? null
