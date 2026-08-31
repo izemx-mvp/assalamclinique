@@ -8,7 +8,6 @@ import { sendDossierEmail } from "@/lib/erp/notify";
 import { useAdmin } from "@/store/admin-store";
 import { useErp, type DossierRecord } from "@/store/erp-store";
 import { EtatBadge } from "./DossiersUnifie";
-import { PdfViewer } from "./PdfViewer";
 import { FilterInput, PageHeader, Pagination, Panel } from "./ui-bits";
 import { cn } from "@/lib/utils";
 
@@ -246,7 +245,7 @@ export function HistoriqueEnvoi() {
                         size="icon"
                         variant="ghost"
                         className="size-8 hover:text-accent"
-                        title="Aperçu du dossier"
+                        title="Détail de l'audit"
                         onClick={() => setDetail(d)}
                       >
                         <Eye className="size-4" />
