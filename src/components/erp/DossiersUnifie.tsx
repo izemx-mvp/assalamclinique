@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   detectFromName,
+  missingFromFiles,
   detectScenario,
   etatOfScenario,
   type EtatDossier,
@@ -499,9 +500,27 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   const globalRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
 
-  const etat: EtatDossier | null = scenario ? etatOfScenario(scenario) : null;
-  const missing: string[] =
-    scenario === "manquant" ? required.filter((id) => id === "carte_mutuelle") : [];
+  /** Pièces manquantes : cas global « Dossier manquant » → CIN assuré ; sinon matching des 6 fichiers. */
+  const missing: string[] = useMemo(() => {
+    if (importMode === "fichiers") {
+      if (!extras.length) return [];
+      return missingFromFiles(
+        extras.map((s) => s.fileName),
+        required,
+      );
+    }
+    if (scenario === "manquant") {
+      const cin = required.filter((id) => id === "cin_assure");
+      return cin.length ? cin : ["cin_assure"];
+    }
+    return [];
+  }, [importMode, extras, required, scenario]);
+
+  const etat: EtatDossier | null = !scenario
+    ? null
+    : missing.length > 0
+      ? "Non conforme"
+      : etatOfScenario(scenario);
 
   /* ------------------------- Ingestion étape 1 ------------------------- */
 
@@ -662,7 +681,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
         "Le dossier comporte des anomalies bloquantes : incohérence d'identité entre les pièces et CIN expirée. Le dossier ne peut pas être transmis à l'organisme.";
     }
 
-    if (sc === "manquant") {
+    if (missing.length > 0) {
       const list = missing.map((id) => labels[id] ?? id);
       plan.push({
         label: "Conformité au référentiel de l'organisme",
@@ -709,7 +728,8 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     setRunning(false);
     setAuditRan(true);
 
-    const currentEtat = etatOfScenario(scenario);
+    const currentEtat: EtatDossier =
+      missing.length > 0 ? "Non conforme" : etatOfScenario(scenario);
     const items = await buildDossierItems(extras, labels);
     if (dossierId) {
       st.updateDossier(dossierId, { etat: currentEtat, audit: summary, items });
@@ -975,32 +995,6 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
             </div>
           )}
 
-          {!analyzing && scenario && importMode === "fichiers" && extras.length > 0 && (
-            <Panel title={`Pièces importées (${extras.length})`}>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {extras.map((s) => (
-                  <article key={s.id} className="glass-soft flex flex-col gap-2 rounded-xl p-3">
-                    <div className="grid h-28 place-items-center overflow-hidden rounded-lg bg-background/40">
-                      {s.mime.startsWith("image/") ? (
-                        <img
-                          src={s.url}
-                          alt={s.fileName}
-                          className="max-h-28 object-contain"
-                          style={{ transform: `rotate(${s.angle}deg)` }}
-                        />
-                      ) : (
-                        <FileText className="size-8 text-muted-foreground" />
-                      )}
-                    </div>
-                    <p className="truncate text-[11px]">{s.fileName}</p>
-                    <p className="truncate text-[10px] text-accent">
-                      {s.pieceId ? (labels[s.pieceId] ?? s.pieceId) : "Non classé"}
-                    </p>
-                  </article>
-                ))}
-              </div>
-            </Panel>
-          )}
 
           {!analyzing && scenario && (
             <div className="glass flex flex-wrap items-center gap-2 rounded-2xl px-5 py-3 text-[11px]">

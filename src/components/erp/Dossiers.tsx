@@ -38,7 +38,9 @@ import {
   dossierFileName,
   buildDossierItems,
   downloadDataUri,
+  fetchReferenceDossierBytes,
 } from "@/lib/erp/dossier-pdf";
+import referenceAsset from "@/assets/dossier-reference.pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel, Segmented } from "./ui-bits";
 import { PdfViewer } from "./PdfViewer";
@@ -182,11 +184,20 @@ export function Dossiers() {
       setViewerUrl(detail.pdfData);
       return;
     }
-    buildDossierPdf(detail, names[detail.interventionId] ?? "—", orgLabel(detail.org)).then(
-      (doc) => {
-        if (!cancelled) setViewerUrl(doc.output("datauristring"));
-      },
-    );
+    // Repli : document de démonstration assemblé (Ouassim BEN MESSAOUD — Dossier conforme)
+    fetchReferenceDossierBytes(referenceAsset).then(async (bytes) => {
+      if (cancelled) return;
+      if (bytes) {
+        setViewerUrl(bytesToDataUri(bytes));
+        return;
+      }
+      const doc = await buildDossierPdf(
+        detail,
+        names[detail.interventionId] ?? "—",
+        orgLabel(detail.org),
+      );
+      if (!cancelled) setViewerUrl(doc.output("datauristring"));
+    });
     return () => {
       cancelled = true;
     };

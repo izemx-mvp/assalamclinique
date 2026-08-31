@@ -61,6 +61,25 @@ export function detectFromName(name: string): Detection {
 
 export const hasAnomaly = (name: string) => ANOMALY_RE.test(name);
 
+/**
+ * Les 6 documents attendus à l'import « fichier par fichier ».
+ * La CIN assuré n'est validée que si la carte mutuelle est présente.
+ */
+export function missingFromFiles(names: string[], required: string[]): string[] {
+  const norm = names.map((n) => normalize(n).toLowerCase());
+  const has = (re: RegExp) => norm.some((n) => re.test(n));
+  const carte = has(/carte\s*mut/);
+  const satisfied: Record<string, boolean> = {
+    demande_pec: has(/demande\s*(de\s*la\s*)?pec|^pec\b|\bpec\b/),
+    note_conf: has(/note\s*confid/),
+    cin_patient: has(/cin.*recto|recto.*cin/) && has(/cin.*verso|verso.*cin/),
+    carte_mutuelle: carte,
+    cin_assure: carte,
+    cr_radio: has(/echo|echographie|échographie|radio|scanner|irm/),
+  };
+  return required.filter((id) => id in satisfied && !satisfied[id]);
+}
+
 /** Termes interdits pour le remplacement de la Note confidentielle. */
 const NOTE_REJECT_RE =
   /anomalie|anom\b|note\s*confid(?!entielle\s*$)|note\s*confif|erreur|erron|probleme|problème/i;
