@@ -125,7 +125,7 @@ export function detectScenario(name: string): GlobalScenario {
   if (/rot(e|é)s?\b|2\s*documents?\s*rot|documents?\s*rot/.test(n)) return "rotes";
   if (/ordre\s*incorrect|desordre|désordre/.test(n)) return "ordre";
   if (/erron|erreur|anomalie/.test(n)) return "errone";
-  if (/manquant|incomplet/.test(n)) return "manquant";
+  if (/manquant|incomplet|non\s*complet|pas\s*complet/.test(n)) return "manquant";
   return "complet";
 }
 

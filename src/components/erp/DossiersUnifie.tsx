@@ -37,6 +37,7 @@ import {
   etatOfScenario,
   type EtatDossier,
   type GlobalScenario,
+  looksLikeCarteMutuelle,
 } from "@/lib/erp/detect";
 import {
   buildDossierItems,
@@ -49,7 +50,7 @@ import { renderTemplate, sendDossierEmail } from "@/lib/erp/notify";
 import referenceAsset from "@/assets/dossier-reference.pdf";
 import { scenarioKeyForEtat, useAdmin } from "@/store/admin-store";
 import { useErp, type AuditSummary, type DossierRecord, type Scan } from "@/store/erp-store";
-import { FilterInput, Pagination, Panel, Segmented, StatusPill } from "./ui-bits";
+import { FilterInput, Pagination, Panel, StatusPill } from "./ui-bits";
 import { PdfViewer } from "./PdfViewer";
 import { cn } from "@/lib/utils";
 
@@ -480,7 +481,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     st.interventions.find((i) => i.id === interventionId)?.name ?? "Cholécystite";
 
   const [step, setStep] = useState(1);
-  const [importMode, setImportMode] = useState<"global" | "fichiers">("global");
+  const [imported, setImported] = useState<string[]>([]);
   const [scenario, setScenario] = useState<GlobalScenario | null>(null);
   const [globalName, setGlobalName] = useState<string | null>(null);
   const [globalBytes, setGlobalBytes] = useState<Uint8Array | null>(null);
@@ -497,36 +498,82 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   const [mailOpen, setMailOpen] = useState(false);
 
 
-  const globalRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
 
-  /** Pièces manquantes : cas global « Dossier manquant » → CIN assuré ; sinon matching des 6 fichiers. */
+  /** Un dossier global déposé (nom contenant « dossier ») pilote le scénario IA. */
+  const globalDossierName = useMemo(
+    () => imported.find((n) => /dossier/i.test(n)) ?? null,
+    [imported],
+  );
+  /** Une carte mutuelle déposée séparément complète un dossier global incomplet. */
+  const carteApportee = useMemo(
+    () => imported.some((n) => !/dossier/i.test(n) && looksLikeCarteMutuelle(n)),
+    [imported],
+  );
+
+  /**
+   * Pièces manquantes :
+   * — dossier global incomplet → carte mutuelle + CIN assuré (sauf carte apportée séparément) ;
+   * — dépôts pièce par pièce → matching strict des 6 documents attendus.
+   */
   const missing: string[] = useMemo(() => {
-    if (importMode === "fichiers") {
-      if (!extras.length) return [];
-      return missingFromFiles(
-        extras.map((s) => s.fileName),
-        required,
-      );
+    if (!imported.length) return [];
+    if (globalDossierName) {
+      if (detectScenario(globalDossierName) !== "manquant" || carteApportee) return [];
+      const ids = required.filter((id) => id === "carte_mutuelle" || id === "cin_assure");
+      return ids.length ? ids : ["carte_mutuelle", "cin_assure"];
     }
-    if (scenario === "manquant") {
-      const cin = required.filter((id) => id === "cin_assure");
-      return cin.length ? cin : ["cin_assure"];
-    }
-    return [];
-  }, [importMode, extras, required, scenario]);
+    return missingFromFiles(imported, required);
+  }, [imported, globalDossierName, carteApportee, required]);
 
   const etat: EtatDossier | null = !scenario
     ? null
     : missing.length > 0
       ? "Non conforme"
-      : etatOfScenario(scenario);
+      : scenario === "manquant"
+        ? "Conforme"
+        : etatOfScenario(scenario);
 
   /* ------------------------- Ingestion étape 1 ------------------------- */
 
-  const analyse = async (name: string) => {
-    const sc = detectScenario(name);
-    setScenario(sc);
+  /**
+   * Zone de dépôt universelle : PDF global, document partiel ou pièces séparées,
+   * en un ou plusieurs dépôts successifs avant le lancement de l'analyse.
+   */
+  const ingest = async (files: FileList | null) => {
+    const list = Array.from(files ?? []);
+    if (!list.length) return;
+
+    const noms = [...imported, ...list.map((f) => f.name)];
+    setImported(noms);
+    setGlobalName(noms.join(", "));
+
+    const globalFile = list.find((f) => /dossier/i.test(f.name));
+    const pdf = globalFile ?? list.find((f) => /\.pdf$/i.test(f.name));
+    if (pdf && (pdf.type === "application/pdf" || /\.pdf$/i.test(pdf.name))) {
+      setGlobalBytes(new Uint8Array(await pdf.arrayBuffer()));
+    }
+
+    const pieces = list.filter((f) => !/dossier/i.test(f.name));
+    if (pieces.length) {
+      const scans: Scan[] = pieces.map((f) => {
+        const d = detectFromName(f.name);
+        return {
+          id: uid(),
+          fileName: f.name,
+          url: URL.createObjectURL(f),
+          mime: f.type,
+          pieceId: d.pieceId,
+          side: d.side ?? (d.needsSide ? "recto" : null),
+          angle: d.angle,
+          straightened: true,
+        };
+      });
+      setExtras((prev) => [...prev, ...scans]);
+    }
+
+    const pilote = noms.find((n) => /dossier/i.test(n));
+    setScenario(pilote ? detectScenario(pilote) : "complet");
     setAuditRan(false);
     setLog([]);
     setCompiled(null);
@@ -537,41 +584,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     setAnalyzing(true);
     await new Promise((r) => setTimeout(r, 1600));
     setAnalyzing(false);
-    toast.success(`Analyse IA terminée : ${name}`);
-  };
-
-  const ingestGlobal = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    setGlobalName(file.name);
-    if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
-      setGlobalBytes(new Uint8Array(await file.arrayBuffer()));
-    } else {
-      setGlobalBytes(null);
-    }
-    await analyse(file.name);
-  };
-
-  const ingestFiles = async (files: FileList | null) => {
-    const list = Array.from(files ?? []);
-    if (!list.length) return;
-    const scans: Scan[] = list.map((f) => {
-      const d = detectFromName(f.name);
-      return {
-        id: uid(),
-        fileName: f.name,
-        url: URL.createObjectURL(f),
-        mime: f.type,
-        pieceId: d.pieceId,
-        side: d.side ?? (d.needsSide ? "recto" : null),
-        angle: d.angle,
-        straightened: true,
-      };
-    });
-    setExtras((prev) => [...prev, ...scans]);
-    const flagged = list.find((f) => detectScenario(f.name) !== "complet");
-    setGlobalName(list.map((f) => f.name).join(", "));
-    await analyse(flagged?.name ?? list[0]!.name);
+    toast.success(`Analyse IA terminée : ${list.length} document(s) traité(s)`);
   };
 
   /* ------------------------------ Audit IA ----------------------------- */
@@ -585,10 +598,9 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
         final: "success",
       },
       {
-        label:
-          importMode === "global"
-            ? "Éclatement du dossier global en pièces"
-            : "Classement automatique des fichiers importés",
+        label: globalDossierName
+          ? "Éclatement du dossier global et regroupement des pièces"
+          : "Classement automatique des fichiers importés",
         detail: globalName ?? "Dossier importé",
         final: "success",
       },
@@ -728,14 +740,13 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     setRunning(false);
     setAuditRan(true);
 
-    const currentEtat: EtatDossier =
-      missing.length > 0 ? "Non conforme" : etatOfScenario(scenario);
+    const currentEtat: EtatDossier = etat ?? "Non conforme";
     const items = await buildDossierItems(extras, labels);
     if (dossierId) {
       st.updateDossier(dossierId, { etat: currentEtat, audit: summary, items });
     } else {
       const id = st.commitDossier("Audité", undefined, items, {
-        source: importMode === "global" ? "global" : "standard",
+        source: globalDossierName ? "global" : "standard",
         patient: PATIENT,
         interventionId,
         org: ORG,
@@ -913,79 +924,54 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
       </div>
 
       <input
-        ref={globalRef}
-        type="file"
-        hidden
-        onChange={(e) => {
-          void ingestGlobal(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      <input
         ref={filesRef}
         type="file"
         hidden
         multiple
+        accept="application/pdf,image/*"
         onChange={(e) => {
-          void ingestFiles(e.target.files);
+          void ingest(e.target.files);
           e.target.value = "";
         }}
       />
 
       {step === 1 && (
         <div className="flex flex-col gap-5">
-          <Panel
-            title="Importer et Scanner"
-            subtitle="Choisissez le mode d'import des pièces du dossier"
-            action={
-              <Segmented
-                value={importMode}
-                onChange={(v) => setImportMode(v as "global" | "fichiers")}
-                options={[
-                  { value: "fichiers", label: "Fichier par fichier" },
-                  { value: "global", label: "Dossier global" },
-                ]}
-              />
-            }
-          >
+          <Panel title="Scanner et Importer">
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
-                if (importMode === "global") void ingestGlobal(e.dataTransfer.files);
-                else void ingestFiles(e.dataTransfer.files);
+                void ingest(e.dataTransfer.files);
               }}
               className="glass-soft flex flex-col items-center justify-center gap-2 rounded-2xl border-dashed py-12 text-center"
             >
-              {importMode === "global" ? (
-                <FileStack className="size-9 text-accent" />
-              ) : (
-                <Files className="size-9 text-accent" />
-              )}
+              <FileStack className="size-9 text-accent" />
               <p className="text-sm font-medium">
-                {importMode === "global"
-                  ? "Glissez-déposez le dossier global (PDF unique) ici"
-                  : "Glissez-déposez les pièces scannées (multi-fichiers) ici"}
+                Glissez-déposez vos fichiers (PDF / Images)
               </p>
-              <p className="text-xs text-muted-foreground">
-                {importMode === "global"
-                  ? "Le PDF est découpé automatiquement par l'IA"
-                  : "Chaque fichier est classé automatiquement dans la checklist"}
+              <p className="max-w-xl text-xs text-muted-foreground">
+                Déposez un dossier global complet, un document partiel ou plusieurs pièces
+                séparées. L'IA extrait, regroupe et analyse l'ensemble automatiquement.
               </p>
             </div>
             <div className="mt-4 flex items-center justify-center">
-              <Button
-                className="rounded-xl"
-                onClick={() =>
-                  importMode === "global" ? globalRef.current?.click() : filesRef.current?.click()
-                }
-              >
-                <Upload className="size-4" />
-                {importMode === "global"
-                  ? "Importer / Scanner le dossier global"
-                  : "Importer / Scanner fichier par fichier"}
+              <Button className="rounded-xl" onClick={() => filesRef.current?.click()}>
+                <Upload className="size-4" /> Importer / Scanner les documents
               </Button>
             </div>
+            {imported.length > 0 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {imported.map((n) => (
+                  <span
+                    key={n}
+                    className="glass-soft inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] text-muted-foreground"
+                  >
+                    <Files className="size-3 text-accent" /> {n}
+                  </span>
+                ))}
+              </div>
+            )}
           </Panel>
 
           {analyzing && (

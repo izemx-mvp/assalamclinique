@@ -38,16 +38,10 @@ export type CoverConfig = {
   published: boolean;
 };
 
-export type ScenarioKey =
-  | "pec_ok"
-  | "pec_ko"
-  | "pec_verif"
-  | "exp_ok"
-  | "exp_ko"
-  | "exp_verif";
+export type ScenarioKey = "pec_ok" | "pec_ko" | "exp_ok" | "exp_ko";
 
 export type EmailPhase = "PEC" | "EXPEDITION";
-export type EmailIssue = "ok" | "ko" | "verif";
+export type EmailIssue = "ok" | "ko";
 
 export type EmailScenario = {
   to: string[];
@@ -111,22 +105,22 @@ export const MODULES_DROITS = [
 export const SCENARIOS: { key: ScenarioKey; label: string }[] = [
   { key: "pec_ok", label: "PEC Validée" },
   { key: "pec_ko", label: "PEC Non conforme" },
-  { key: "pec_verif", label: "PEC À vérifier" },
   { key: "exp_ok", label: "Expédition Validée" },
   { key: "exp_ko", label: "Expédition Non conforme" },
-  { key: "exp_verif", label: "Expédition À vérifier" },
 ];
 
 /** Clé de scénario à partir de la phase et de l'issue du contrôle. */
 export const scenarioKey = (phase: EmailPhase, issue: EmailIssue): ScenarioKey =>
-  `${phase === "PEC" ? "pec" : "exp"}_${issue === "ok" ? "ok" : issue === "ko" ? "ko" : "verif"}` as ScenarioKey;
+  `${phase === "PEC" ? "pec" : "exp"}_${issue}` as ScenarioKey;
 
-/** Clé de scénario correspondant à l'état d'un dossier audité. */
+/**
+ * Clé de scénario correspondant à l'état d'un dossier audité.
+ * Un dossier « À vérifier » utilise le modèle « Dossier non conforme ».
+ */
 export const scenarioKeyForEtat = (
   mode: "PEC" | "EXPEDITION",
   etat: "Conforme" | "Non conforme" | "À vérifier",
-): ScenarioKey =>
-  scenarioKey(mode, etat === "Conforme" ? "ok" : etat === "Non conforme" ? "ko" : "verif");
+): ScenarioKey => scenarioKey(mode, etat === "Conforme" ? "ok" : "ko");
 
 export const EMAIL_VARIABLES = [
   "{PATIENT}",
@@ -247,13 +241,7 @@ const INITIAL_EMAILS: EmailsConfig = {
       to: ["admissions@clinique-assalam.ma"],
       subject: "Dossier PEC non conforme — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
-    },
-    pec_verif: {
-      to: ["administration@clinique-assalam.ma"],
-      subject: "Dossier PEC à vérifier — {NUM_DOSSIER} — {PATIENT}",
-      body:
-        "Bonjour,\n\nLe contrôle IA du dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
+        "Bonjour,\n\nLe dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\nÉléments à vérifier : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de compléter ou de vérifier le dossier avant nouvelle soumission.\n\nClinique Assalam",
     },
     exp_ok: {
       to: ["pec@cnss.ma"],
@@ -265,13 +253,7 @@ const INITIAL_EMAILS: EmailsConfig = {
       to: ["admissions@clinique-assalam.ma"],
       subject: "Dossier Expédition non conforme — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
-    },
-    exp_verif: {
-      to: ["administration@clinique-assalam.ma"],
-      subject: "Dossier Expédition à vérifier — {NUM_DOSSIER} — {PATIENT}",
-      body:
-        "Bonjour,\n\nLe contrôle IA du dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
+        "Bonjour,\n\nLe dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\nÉléments à vérifier : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de compléter ou de vérifier le dossier avant nouvelle soumission.\n\nClinique Assalam",
     },
   },
 };
@@ -405,7 +387,7 @@ type Actions = {
   removeUtilisateur: (id: string) => void;
 };
 
-const KEY = "assalam-erp-admin-v2";
+const KEY = "assalam-erp-admin-v3";
 
 const FALLBACK: State = {
   organismes: INITIAL_ORGANISMES,
