@@ -38,6 +38,8 @@ import {
   dossierFileName,
   buildDossierItems,
   downloadDataUri,
+  fetchReferenceDossierBytes,
+import referenceAsset from "@/assets/dossier-reference.pdf";
 } from "@/lib/erp/dossier-pdf";
 import { useErp, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel, Segmented } from "./ui-bits";
