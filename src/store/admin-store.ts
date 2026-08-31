@@ -105,22 +105,22 @@ export const MODULES_DROITS = [
 export const SCENARIOS: { key: ScenarioKey; label: string }[] = [
   { key: "pec_ok", label: "PEC Validée" },
   { key: "pec_ko", label: "PEC Non conforme" },
-  { key: "pec_verif", label: "PEC À vérifier" },
   { key: "exp_ok", label: "Expédition Validée" },
   { key: "exp_ko", label: "Expédition Non conforme" },
-  { key: "exp_verif", label: "Expédition À vérifier" },
 ];
 
 /** Clé de scénario à partir de la phase et de l'issue du contrôle. */
 export const scenarioKey = (phase: EmailPhase, issue: EmailIssue): ScenarioKey =>
-  `${phase === "PEC" ? "pec" : "exp"}_${issue === "ok" ? "ok" : issue === "ko" ? "ko" : "verif"}` as ScenarioKey;
+  `${phase === "PEC" ? "pec" : "exp"}_${issue}` as ScenarioKey;
 
-/** Clé de scénario correspondant à l'état d'un dossier audité. */
+/**
+ * Clé de scénario correspondant à l'état d'un dossier audité.
+ * Un dossier « À vérifier » utilise le modèle « Dossier non conforme ».
+ */
 export const scenarioKeyForEtat = (
   mode: "PEC" | "EXPEDITION",
   etat: "Conforme" | "Non conforme" | "À vérifier",
-): ScenarioKey =>
-  scenarioKey(mode, etat === "Conforme" ? "ok" : etat === "Non conforme" ? "ko" : "verif");
+): ScenarioKey => scenarioKey(mode, etat === "Conforme" ? "ok" : "ko");
 
 export const EMAIL_VARIABLES = [
   "{PATIENT}",
