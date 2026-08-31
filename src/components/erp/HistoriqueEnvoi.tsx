@@ -133,7 +133,7 @@ export function HistoriqueEnvoi() {
                 <th className="px-3 pb-1 font-medium">Organisme</th>
                 <th className="px-3 pb-1 font-medium">Mode</th>
                 <th className="px-3 pb-1 font-medium">État</th>
-                <th className="px-3 pb-1 font-medium">E-mail</th>
+                <th className="px-3 pb-1 font-medium">Statut E-mail</th>
                 <th className="px-3 pb-1 font-medium">Destinataire</th>
                 <th className="px-3 pb-1 text-right font-medium">Actions</th>
               </tr>
