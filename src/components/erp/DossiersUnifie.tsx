@@ -480,7 +480,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     st.interventions.find((i) => i.id === interventionId)?.name ?? "Cholécystite";
 
   const [step, setStep] = useState(1);
-  const [importMode, setImportMode] = useState<"global" | "fichiers">("global");
+  const [imported, setImported] = useState<string[]>([]);
   const [scenario, setScenario] = useState<GlobalScenario | null>(null);
   const [globalName, setGlobalName] = useState<string | null>(null);
   const [globalBytes, setGlobalBytes] = useState<Uint8Array | null>(null);
