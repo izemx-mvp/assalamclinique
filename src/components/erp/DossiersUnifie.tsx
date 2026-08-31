@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   detectFromName,
+  missingFromFiles,
   detectScenario,
   etatOfScenario,
   type EtatDossier,
