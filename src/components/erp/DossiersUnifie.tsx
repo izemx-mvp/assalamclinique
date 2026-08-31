@@ -680,7 +680,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
         "Le dossier comporte des anomalies bloquantes : incohérence d'identité entre les pièces et CIN expirée. Le dossier ne peut pas être transmis à l'organisme.";
     }
 
-    if (sc === "manquant") {
+    if (missing.length > 0) {
       const list = missing.map((id) => labels[id] ?? id);
       plan.push({
         label: "Conformité au référentiel de l'organisme",
