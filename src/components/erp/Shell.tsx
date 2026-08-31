@@ -13,13 +13,14 @@ import {
   SlidersHorizontal,
   Stamp,
   Stethoscope,
+  Send,
   Settings2,
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Parametrage } from "./Parametrage";
-import { Dossiers } from "./Dossiers";
-import { DossiersGlobal } from "./DossiersGlobal";
+import { DossiersUnifie } from "./DossiersUnifie";
+import { HistoriqueEnvoi } from "./HistoriqueEnvoi";
 import { Organismes } from "./Organismes";
 import { ReglesIA } from "./ReglesIA";
 import { PagesGarde } from "./PagesGarde";
@@ -31,7 +32,7 @@ import { cn } from "@/lib/utils";
 
 type View =
   | "dossiers"
-  | "dossiers-global"
+  | "historique"
   | "parametrage"
   | "organismes"
   | "regles-ia"
@@ -46,32 +47,32 @@ type Group = { id: string; label: string; Icon: LucideIcon; items: Item[] };
 const GROUPS: Group[] = [
   {
     id: "dossiers",
-    label: "Dossiers d'Interventions",
+    label: "DOSSIERS & CONTRÔLE",
     Icon: FileStack,
     items: [
-      { id: "dossiers", label: "Dossiers d'Intervention", Icon: Stethoscope },
-      { id: "dossiers-global", label: "DOSSIERS D'INTERVENTION", Icon: FileStack },
+      { id: "dossiers", label: "Dossiers d'intervention", Icon: Stethoscope },
+      { id: "historique", label: "Historique d'envoi", Icon: Send },
     ],
   },
   {
     id: "referentiels",
-    label: "Référentiels & Conformité",
+    label: "RÉFÉRENTIELS & CONFORMITÉ",
     Icon: ShieldCheck,
     items: [
-      { id: "parametrage", label: "Paramétrage des Interventions", Icon: SlidersHorizontal },
+      { id: "parametrage", label: "Paramétrage des interventions", Icon: SlidersHorizontal },
       { id: "organismes", label: "Organismes", Icon: Building2 },
-      { id: "regles-ia", label: "Règles de Conformité IA", Icon: BrainCircuit },
+      { id: "regles-ia", label: "Règles IA", Icon: BrainCircuit },
     ],
   },
   {
     id: "administration",
-    label: "Administration",
+    label: "ADMINISTRATION",
     Icon: Settings2,
     items: [
       { id: "pages-garde", label: "Pages de Garde", Icon: FileSignature },
-      { id: "emails", label: "Configuration E-mails", Icon: Mail },
+      { id: "emails", label: "E-mails", Icon: Mail },
       { id: "cachets", label: "Cachets & Signatures", Icon: Stamp },
-      { id: "utilisateurs", label: "Utilisateurs & Rôles", Icon: Users },
+      { id: "utilisateurs", label: "Utilisateurs", Icon: Users },
     ],
   },
 ];
@@ -90,9 +91,9 @@ export function Shell() {
   const screen = () => {
     switch (view) {
       case "dossiers":
-        return <Dossiers />;
-      case "dossiers-global":
-        return <DossiersGlobal />;
+        return <DossiersUnifie />;
+      case "historique":
+        return <HistoriqueEnvoi />;
       case "parametrage":
         return <Parametrage />;
       case "organismes":
