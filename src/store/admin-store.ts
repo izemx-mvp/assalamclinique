@@ -38,16 +38,10 @@ export type CoverConfig = {
   published: boolean;
 };
 
-export type ScenarioKey =
-  | "pec_ok"
-  | "pec_ko"
-  | "pec_verif"
-  | "exp_ok"
-  | "exp_ko"
-  | "exp_verif";
+export type ScenarioKey = "pec_ok" | "pec_ko" | "exp_ok" | "exp_ko";
 
 export type EmailPhase = "PEC" | "EXPEDITION";
-export type EmailIssue = "ok" | "ko" | "verif";
+export type EmailIssue = "ok" | "ko";
 
 export type EmailScenario = {
   to: string[];
