@@ -498,7 +498,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   const filesRef = useRef<HTMLInputElement>(null);
 
   const etat: EtatDossier | null = scenario ? etatOfScenario(scenario) : null;
-  const missing =
+  const missing: string[] =
     scenario === "manquant" ? required.filter((id) => id === "carte_mutuelle") : [];
 
   /* ------------------------- Ingestion étape 1 ------------------------- */
