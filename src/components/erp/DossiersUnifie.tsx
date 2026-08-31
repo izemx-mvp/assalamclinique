@@ -533,9 +533,44 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
 
   /* ------------------------- Ingestion étape 1 ------------------------- */
 
-  const analyse = async (name: string) => {
-    const sc = detectScenario(name);
-    setScenario(sc);
+  /**
+   * Zone de dépôt universelle : PDF global, document partiel ou pièces séparées,
+   * en un ou plusieurs dépôts successifs avant le lancement de l'analyse.
+   */
+  const ingest = async (files: FileList | null) => {
+    const list = Array.from(files ?? []);
+    if (!list.length) return;
+
+    const noms = [...imported, ...list.map((f) => f.name)];
+    setImported(noms);
+    setGlobalName(noms.join(", "));
+
+    const globalFile = list.find((f) => /dossier/i.test(f.name));
+    const pdf = globalFile ?? list.find((f) => /\.pdf$/i.test(f.name));
+    if (pdf && (pdf.type === "application/pdf" || /\.pdf$/i.test(pdf.name))) {
+      setGlobalBytes(new Uint8Array(await pdf.arrayBuffer()));
+    }
+
+    const pieces = list.filter((f) => !/dossier/i.test(f.name));
+    if (pieces.length) {
+      const scans: Scan[] = pieces.map((f) => {
+        const d = detectFromName(f.name);
+        return {
+          id: uid(),
+          fileName: f.name,
+          url: URL.createObjectURL(f),
+          mime: f.type,
+          pieceId: d.pieceId,
+          side: d.side ?? (d.needsSide ? "recto" : null),
+          angle: d.angle,
+          straightened: true,
+        };
+      });
+      setExtras((prev) => [...prev, ...scans]);
+    }
+
+    const pilote = noms.find((n) => /dossier/i.test(n));
+    setScenario(pilote ? detectScenario(pilote) : "complet");
     setAuditRan(false);
     setLog([]);
     setCompiled(null);
@@ -546,41 +581,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     setAnalyzing(true);
     await new Promise((r) => setTimeout(r, 1600));
     setAnalyzing(false);
-    toast.success(`Analyse IA terminée : ${name}`);
-  };
-
-  const ingestGlobal = async (files: FileList | null) => {
-    const file = files?.[0];
-    if (!file) return;
-    setGlobalName(file.name);
-    if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
-      setGlobalBytes(new Uint8Array(await file.arrayBuffer()));
-    } else {
-      setGlobalBytes(null);
-    }
-    await analyse(file.name);
-  };
-
-  const ingestFiles = async (files: FileList | null) => {
-    const list = Array.from(files ?? []);
-    if (!list.length) return;
-    const scans: Scan[] = list.map((f) => {
-      const d = detectFromName(f.name);
-      return {
-        id: uid(),
-        fileName: f.name,
-        url: URL.createObjectURL(f),
-        mime: f.type,
-        pieceId: d.pieceId,
-        side: d.side ?? (d.needsSide ? "recto" : null),
-        angle: d.angle,
-        straightened: true,
-      };
-    });
-    setExtras((prev) => [...prev, ...scans]);
-    const flagged = list.find((f) => detectScenario(f.name) !== "complet");
-    setGlobalName(list.map((f) => f.name).join(", "));
-    await analyse(flagged?.name ?? list[0]!.name);
+    toast.success(`Analyse IA terminée : ${list.length} document(s) traité(s)`);
   };
 
   /* ------------------------------ Audit IA ----------------------------- */
