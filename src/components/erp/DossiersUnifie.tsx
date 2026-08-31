@@ -788,7 +788,19 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   };
 
   const blocked = !auditRan || etat !== "Conforme";
-  const showAdminMail = auditRan && (etat === "Non conforme" || etat === "À vérifier");
+
+  const admin = useAdmin();
+  const mailPreview = useMemo(() => {
+    const record = dossierId ? st.dossiers.find((d) => d.id === dossierId) : null;
+    if (!record || !etat) return { to: "—", subject: "—", body: "—" };
+    const sc = admin.emails.scenarios[scenarioKeyForEtat(record.mode, etat)];
+    return {
+      to: sc.to.join(", "),
+      subject: renderTemplate(sc.subject, record, interventionName),
+      body: renderTemplate(sc.body, record, interventionName),
+    };
+  }, [admin.emails.scenarios, dossierId, etat, interventionName, st.dossiers]);
+
 
   /* ------------------------------ Rendu -------------------------------- */
 
