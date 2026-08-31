@@ -50,7 +50,7 @@ import { renderTemplate, sendDossierEmail } from "@/lib/erp/notify";
 import referenceAsset from "@/assets/dossier-reference.pdf";
 import { scenarioKeyForEtat, useAdmin } from "@/store/admin-store";
 import { useErp, type AuditSummary, type DossierRecord, type Scan } from "@/store/erp-store";
-import { FilterInput, Pagination, Panel, Segmented, StatusPill } from "./ui-bits";
+import { FilterInput, Pagination, Panel, StatusPill } from "./ui-bits";
 import { PdfViewer } from "./PdfViewer";
 import { cn } from "@/lib/utils";
 
