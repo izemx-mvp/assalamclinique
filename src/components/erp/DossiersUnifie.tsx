@@ -499,9 +499,27 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
   const globalRef = useRef<HTMLInputElement>(null);
   const filesRef = useRef<HTMLInputElement>(null);
 
-  const etat: EtatDossier | null = scenario ? etatOfScenario(scenario) : null;
-  const missing: string[] =
-    scenario === "manquant" ? required.filter((id) => id === "carte_mutuelle") : [];
+  /** Pièces manquantes : cas global « Dossier manquant » → CIN assuré ; sinon matching des 6 fichiers. */
+  const missing: string[] = useMemo(() => {
+    if (importMode === "fichiers") {
+      if (!extras.length) return [];
+      return missingFromFiles(
+        extras.map((s) => s.fileName),
+        required,
+      );
+    }
+    if (scenario === "manquant") {
+      const cin = required.filter((id) => id === "cin_assure");
+      return cin.length ? cin : ["cin_assure"];
+    }
+    return [];
+  }, [importMode, extras, required, scenario]);
+
+  const etat: EtatDossier | null = !scenario
+    ? null
+    : missing.length > 0
+      ? "Non conforme"
+      : etatOfScenario(scenario);
 
   /* ------------------------- Ingestion étape 1 ------------------------- */
 
