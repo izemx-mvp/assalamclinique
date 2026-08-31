@@ -241,38 +241,37 @@ const INITIAL_EMAILS: EmailsConfig = {
       to: ["pec@cnss.ma"],
       subject: "PEC {NUM_DOSSIER} — {PATIENT} — {INTERVENTION}",
       body:
-        "Bonjour,\n\nVeuillez trouver ci-joint le dossier de prise en charge {NUM_DOSSIER} du patient {PATIENT} ({INTERVENTION} — {ORGANISME}).\nStatut du contrôle : {STATUT_GLOBAL}.\nCorrections automatiques appliquées : {CORRECTIONS_AUTOMATIQUES}.\n\nCordialement,\nClinique Assalam",
+        "Bonjour,\n\nVeuillez trouver ci-joint le dossier de PEC {NUM_DOSSIER} du patient {PATIENT} ({INTERVENTION} — {ORGANISME}).\nStatut du contrôle : {STATUT_GLOBAL}.\nCorrections automatiques appliquées : {CORRECTIONS_AUTOMATIQUES}.\n\nCordialement,\nClinique Assalam",
     },
     pec_ko: {
       to: ["admissions@clinique-assalam.ma"],
       subject: "Dossier PEC non conforme — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe dossier {NUM_DOSSIER} ({PATIENT} — {INTERVENTION}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
+        "Bonjour,\n\nLe dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
     },
     pec_verif: {
       to: ["administration@clinique-assalam.ma"],
       subject: "Dossier PEC à vérifier — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe contrôle IA du dossier {NUM_DOSSIER} ({PATIENT} — {INTERVENTION}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_MANQUANTES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
+        "Bonjour,\n\nLe contrôle IA du dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
     },
     exp_ok: {
-
-      to: ["expedition@clinique-assalam.ma"],
-      subject: "Expédition {NUM_DOSSIER} — {PATIENT} — {ORGANISME}",
+      to: ["pec@cnss.ma"],
+      subject: "Expédition {NUM_DOSSIER} — {PATIENT} — {INTERVENTION}",
       body:
-        "Bonjour,\n\nLe dossier d'expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION}) est conforme et transmis à {ORGANISME}.\n\nCordialement,\nClinique Assalam",
+        "Bonjour,\n\nVeuillez trouver ci-joint le dossier d'Expédition {NUM_DOSSIER} du patient {PATIENT} ({INTERVENTION} — {ORGANISME}).\nStatut du contrôle : {STATUT_GLOBAL}.\nCorrections automatiques appliquées : {CORRECTIONS_AUTOMATIQUES}.\n\nCordialement,\nClinique Assalam",
     },
     exp_ko: {
-      to: ["facturation@clinique-assalam.ma"],
-      subject: "Expédition non conforme — {NUM_DOSSIER} — {PATIENT}",
+      to: ["admissions@clinique-assalam.ma"],
+      subject: "Dossier Expédition non conforme — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe dossier d'expédition {NUM_DOSSIER} ({PATIENT}) est NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nClinique Assalam",
+        "Bonjour,\n\nLe dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
     },
     exp_verif: {
       to: ["administration@clinique-assalam.ma"],
-      subject: "Dossier d'expédition à vérifier — {NUM_DOSSIER} — {PATIENT}",
+      subject: "Dossier Expédition à vérifier — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe contrôle IA du dossier d'expédition {NUM_DOSSIER} ({PATIENT}) comporte des éléments non déterminés.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nClinique Assalam",
+        "Bonjour,\n\nLe contrôle IA du dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
     },
   },
 };
