@@ -387,22 +387,57 @@ function Referentiel({ interventionId }: { interventionId: string }) {
           />
         }
       >
-        <div className="flex flex-wrap gap-2">
-          {ORGANISMES.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => st.setSel({ selOrg: o.id })}
-              className={cn(
-                "rounded-full px-4 py-1.5 text-xs font-medium transition-all",
-                st.selOrg === o.id
-                  ? "glow-ring bg-primary text-primary-foreground"
-                  : "glass-soft text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {o.label}
-            </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {orgsDispo.map((o) => (
+            <span key={o.id} className="group relative inline-flex">
+              <button
+                onClick={() => st.setSel({ selOrg: o.id })}
+                className={cn(
+                  "rounded-full px-4 py-1.5 text-xs font-medium transition-all",
+                  st.selOrg === o.id
+                    ? "glow-ring bg-primary text-primary-foreground"
+                    : "glass-soft text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {o.name}
+              </button>
+              <button
+                title="Détacher cet organisme de l'intervention"
+                onClick={() => {
+                  ad.detachOrg(interventionId, o.id);
+                  if (st.selOrg === o.id) {
+                    const next = orgsDispo.find((x) => x.id !== o.id);
+                    if (next) st.setSel({ selOrg: next.id });
+                  }
+                }}
+                className="absolute -top-1 -right-1 hidden size-4 place-items-center rounded-full bg-destructive text-[9px] text-destructive-foreground group-hover:grid"
+              >
+                ×
+              </button>
+            </span>
           ))}
+          {orgsAbsents.length > 0 && (
+            <select
+              value=""
+              onChange={(e) => {
+                if (!e.target.value) return;
+                ad.attachOrg(interventionId, e.target.value);
+                st.setSel({ selOrg: e.target.value });
+              }}
+              className="glass-soft h-8 rounded-full px-3 text-xs text-muted-foreground outline-none"
+            >
+              <option value="" className="bg-popover">
+                + Associer un organisme
+              </option>
+              {orgsAbsents.map((o) => (
+                <option key={o.id} value={o.id} className="bg-popover">
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
+
 
         <div className="mt-5 flex flex-col gap-2">
           {entries.length === 0 && (
