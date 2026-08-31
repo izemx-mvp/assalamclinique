@@ -923,79 +923,54 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
       </div>
 
       <input
-        ref={globalRef}
-        type="file"
-        hidden
-        onChange={(e) => {
-          void ingestGlobal(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      <input
         ref={filesRef}
         type="file"
         hidden
         multiple
+        accept="application/pdf,image/*"
         onChange={(e) => {
-          void ingestFiles(e.target.files);
+          void ingest(e.target.files);
           e.target.value = "";
         }}
       />
 
       {step === 1 && (
         <div className="flex flex-col gap-5">
-          <Panel
-            title="Importer et Scanner"
-            subtitle="Choisissez le mode d'import des pièces du dossier"
-            action={
-              <Segmented
-                value={importMode}
-                onChange={(v) => setImportMode(v as "global" | "fichiers")}
-                options={[
-                  { value: "fichiers", label: "Fichier par fichier" },
-                  { value: "global", label: "Dossier global" },
-                ]}
-              />
-            }
-          >
+          <Panel title="Scanner et Importer">
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
-                if (importMode === "global") void ingestGlobal(e.dataTransfer.files);
-                else void ingestFiles(e.dataTransfer.files);
+                void ingest(e.dataTransfer.files);
               }}
               className="glass-soft flex flex-col items-center justify-center gap-2 rounded-2xl border-dashed py-12 text-center"
             >
-              {importMode === "global" ? (
-                <FileStack className="size-9 text-accent" />
-              ) : (
-                <Files className="size-9 text-accent" />
-              )}
+              <FileStack className="size-9 text-accent" />
               <p className="text-sm font-medium">
-                {importMode === "global"
-                  ? "Glissez-déposez le dossier global (PDF unique) ici"
-                  : "Glissez-déposez les pièces scannées (multi-fichiers) ici"}
+                Glissez-déposez vos fichiers (PDF / Images)
               </p>
-              <p className="text-xs text-muted-foreground">
-                {importMode === "global"
-                  ? "Le PDF est découpé automatiquement par l'IA"
-                  : "Chaque fichier est classé automatiquement dans la checklist"}
+              <p className="max-w-xl text-xs text-muted-foreground">
+                Déposez un dossier global complet, un document partiel ou plusieurs pièces
+                séparées. L'IA extrait, regroupe et analyse l'ensemble automatiquement.
               </p>
             </div>
             <div className="mt-4 flex items-center justify-center">
-              <Button
-                className="rounded-xl"
-                onClick={() =>
-                  importMode === "global" ? globalRef.current?.click() : filesRef.current?.click()
-                }
-              >
-                <Upload className="size-4" />
-                {importMode === "global"
-                  ? "Importer / Scanner le dossier global"
-                  : "Importer / Scanner fichier par fichier"}
+              <Button className="rounded-xl" onClick={() => filesRef.current?.click()}>
+                <Upload className="size-4" /> Importer / Scanner les documents
               </Button>
             </div>
+            {imported.length > 0 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {imported.map((n) => (
+                  <span
+                    key={n}
+                    className="glass-soft inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] text-muted-foreground"
+                  >
+                    <Files className="size-3 text-accent" /> {n}
+                  </span>
+                ))}
+              </div>
+            )}
           </Panel>
 
           {analyzing && (
