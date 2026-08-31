@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, FileWarning } from "lucide-react";
+import { Loader2, FileWarning, Minus, Plus, Maximize } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /** Décode une data URI base64 en octets. */
 const dataUriToBytes = (dataUri: string) => {
@@ -10,9 +11,14 @@ const dataUriToBytes = (dataUri: string) => {
   return bytes;
 };
 
+const MIN = 0.25;
+const MAX = 2;
+const clamp = (z: number) => Math.min(MAX, Math.max(MIN, z));
+
 /**
  * Visualiseur PDF réel : rend chaque page du PDF dans un <canvas> via pdf.js.
- * Évite l'iframe (bloquée par Chrome pour les blob/data URLs dans les previews).
+ * Affichage par défaut adapté à la largeur du conteneur (100 % = fit), avec
+ * une barre d'outils de zoom de 25 % à 200 %.
  */
 export function PdfViewer({
   dataUri,
@@ -26,6 +32,7 @@ export function PdfViewer({
   const hostRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [pageCount, setPageCount] = useState(0);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +59,6 @@ export function PdfViewer({
         const doc = await pdfjs.getDocument({ data: dataUriToBytes(dataUri) }).promise;
         if (cancelled) return;
 
-
         const host = hostRef.current;
         if (!host) return;
         host.innerHTML = "";
@@ -66,7 +72,7 @@ export function PdfViewer({
           const canvas = document.createElement("canvas");
           canvas.width = Math.floor(viewport.width);
           canvas.height = Math.floor(viewport.height);
-          canvas.className = "mx-auto mb-3 w-full max-w-full rounded-lg bg-white shadow-lg";
+          canvas.className = "mx-auto mb-3 block h-auto w-full rounded-lg bg-white shadow-lg";
           const ctx = canvas.getContext("2d");
           if (!ctx) continue;
           host.appendChild(canvas);
@@ -76,7 +82,6 @@ export function PdfViewer({
         console.error("[PdfViewer] rendu impossible", error);
         if (!cancelled) setState("error");
       }
-
     })();
 
     return () => {
@@ -85,7 +90,7 @@ export function PdfViewer({
   }, [dataUri, scale]);
 
   return (
-    <div className={`relative h-full overflow-y-auto p-3 ${className}`}>
+    <div className={`relative h-full overflow-auto p-3 ${className}`}>
       {state === "loading" && (
         <div className="grid h-full place-items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-6 animate-spin" />
@@ -98,7 +103,51 @@ export function PdfViewer({
           Document illisible.
         </div>
       )}
-      <div ref={hostRef} className={state === "ready" ? "" : "hidden"} />
+
+      {state === "ready" && (
+        <div className="sticky top-0 z-10 mb-3 flex items-center justify-center gap-1 rounded-xl border border-white/10 bg-background/70 p-1 backdrop-blur">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Réduire le zoom"
+            onClick={() => setZoom((z) => clamp(Math.round((z - 0.25) * 100) / 100))}
+            disabled={zoom <= MIN}
+          >
+            <Minus className="size-4" />
+          </Button>
+          <span className="min-w-14 text-center text-xs tabular-nums text-muted-foreground">
+            {Math.round(zoom * 100)}%
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Augmenter le zoom"
+            onClick={() => setZoom((z) => clamp(Math.round((z + 0.25) * 100) / 100))}
+            disabled={zoom >= MAX}
+          >
+            <Plus className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Adapter à la vue"
+            onClick={() => setZoom(1)}
+          >
+            <Maximize className="size-4" />
+          </Button>
+        </div>
+      )}
+
+      <div
+        className={`mx-auto transition-[width] duration-200 ${state === "ready" ? "" : "hidden"}`}
+        style={{ width: `${zoom * 100}%`, maxWidth: zoom <= 1 ? "100%" : "none" }}
+      >
+        <div ref={hostRef} />
+      </div>
+
       {state === "ready" && pageCount > 0 && (
         <p className="pb-1 text-center text-xs text-muted-foreground">{pageCount} page(s)</p>
       )}

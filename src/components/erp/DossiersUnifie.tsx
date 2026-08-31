@@ -793,7 +793,7 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
         mode: "PEC",
         labels,
       },
-      { rotateLast: scenario === "rotes", coverAtEnd: true },
+      { rotateLast: scenario === "rotes", coverAtEnd: !reference },
     );
 
     const dataUri = bytesToDataUri(bytes);
