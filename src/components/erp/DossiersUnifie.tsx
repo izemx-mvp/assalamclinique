@@ -727,7 +727,8 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     setRunning(false);
     setAuditRan(true);
 
-    const currentEtat = etatOfScenario(scenario);
+    const currentEtat: EtatDossier =
+      missing.length > 0 ? "Non conforme" : etatOfScenario(scenario);
     const items = await buildDossierItems(extras, labels);
     if (dossierId) {
       st.updateDossier(dossierId, { etat: currentEtat, audit: summary, items });
