@@ -44,9 +44,9 @@ import {
   downloadDataUri,
   fetchReferenceDossierBytes,
 } from "@/lib/erp/dossier-pdf";
-import { sendDossierEmail } from "@/lib/erp/notify";
+import { renderTemplate, sendDossierEmail } from "@/lib/erp/notify";
 import referenceAsset from "@/assets/dossier-reference.pdf";
-import { useAdmin } from "@/store/admin-store";
+import { scenarioKeyForEtat, useAdmin } from "@/store/admin-store";
 import { useErp, type AuditSummary, type DossierRecord, type Scan } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel, Segmented, StatusPill } from "./ui-bits";
 import { PdfViewer } from "./PdfViewer";
