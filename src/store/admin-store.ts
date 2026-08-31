@@ -405,7 +405,7 @@ type Actions = {
   removeUtilisateur: (id: string) => void;
 };
 
-const KEY = "assalam-erp-admin-v1";
+const KEY = "assalam-erp-admin-v2";
 
 const FALLBACK: State = {
   organismes: INITIAL_ORGANISMES,
