@@ -597,10 +597,9 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
         final: "success",
       },
       {
-        label:
-          importMode === "global"
-            ? "Éclatement du dossier global en pièces"
-            : "Classement automatique des fichiers importés",
+        label: globalDossierName
+          ? "Éclatement du dossier global et regroupement des pièces"
+          : "Classement automatique des fichiers importés",
         detail: globalName ?? "Dossier importé",
         final: "success",
       },
