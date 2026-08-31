@@ -299,27 +299,106 @@ export function HistoriqueEnvoi() {
       </Panel>
 
       <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-        <DialogContent className="glass max-w-4xl">
+        <DialogContent className="glass max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Dossier {detail?.num}</DialogTitle>
+            <DialogTitle>Détail d'audit — {detail?.num}</DialogTitle>
           </DialogHeader>
-          {detail?.audit && (detail.etat ?? "Conforme") !== "Conforme" && (
-            <div className="glass-soft rounded-xl px-3 py-3 text-xs">
-              <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
-                Synthèse de l'audit IA
-              </p>
-              <p className="mt-1 text-foreground/90">{detail.audit.detail}</p>
+          {detail && (
+            <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  ["Patient", detail.patient],
+                  ["Intervention", names[detail.interventionId] ?? "—"],
+                  ["Organisme", ad.orgLabel(detail.org)],
+                  ["Mode", (detail.mode ?? "PEC") === "EXPEDITION" ? "Expédition" : "PEC"],
+                ].map(([k, v]) => (
+                  <div key={k} className="glass-soft rounded-xl px-3 py-2 text-xs">
+                    <p className="text-[11px] text-muted-foreground">{k}</p>
+                    <p className="font-medium">{v}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="glass-soft rounded-xl px-3 py-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                    Synthèse du contrôle IA
+                  </p>
+                  <EtatBadge etat={detail.etat} />
+                </div>
+                {detail.audit?.detail && (
+                  <p className="mt-2 text-foreground/90">{detail.audit.detail}</p>
+                )}
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {[
+                    { label: "Pièces manquantes", items: detail.audit?.missing ?? [] },
+                    {
+                      label: "Pièces concernées",
+                      items: [...(detail.audit?.missing ?? []), ...(detail.audit?.infos ?? [])],
+                    },
+                    { label: "Anomalies détectées", items: detail.audit?.rules ?? [] },
+                    { label: "Informations non déterminées", items: detail.audit?.infos ?? [] },
+                    {
+                      label: "Corrections automatiques",
+                      items: detail.audit?.corrections ?? [],
+                    },
+                  ].map((b) => (
+                    <div key={b.label} className="rounded-xl bg-background/40 px-3 py-2">
+                      <p className="text-[11px] text-muted-foreground">{b.label}</p>
+                      {b.items.length ? (
+                        <ul className="mt-1 list-disc space-y-0.5 pl-4 text-foreground/90">
+                          {b.items.map((i) => (
+                            <li key={i}>{i}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-1 text-foreground/60">Aucun</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-soft rounded-xl px-3 py-3 text-xs">
+                <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                  Détail de l'envoi
+                </p>
+                <div className="mt-2 space-y-1">
+                  <p>
+                    Statut d'envoi :{" "}
+                    <span className={detail.envoye ? "text-success" : "text-muted-foreground"}>
+                      {detail.envoye ? "Envoyé" : "Non envoyé"}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    Date d'envoi : <span className="text-foreground">{detail.sentAt ?? "—"}</span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    Destinataires : <span className="text-foreground">{detail.sentTo ?? "—"}</span>
+                  </p>
+                  <p className="text-muted-foreground">
+                    Historique :{" "}
+                    <span className="text-foreground">
+                      Créé le {detail.createdAt} par {detail.createdBy}
+                      {detail.sentAt ? ` · notifié le ${detail.sentAt}` : ""}
+                    </span>
+                  </p>
+                </div>
+                {!detail.envoye && (
+                  <Button
+                    size="sm"
+                    className="mt-3 rounded-xl"
+                    onClick={() => {
+                      resend(detail);
+                      setDetail(useErp.getState().dossiers.find((x) => x.id === detail.id) ?? null);
+                    }}
+                  >
+                    <Mail className="size-4" /> Envoyer la notification
+                  </Button>
+                )}
+              </div>
             </div>
           )}
-          <div className="glass-soft h-[60vh] overflow-hidden rounded-xl">
-            {detail?.pdfData ? (
-              <PdfViewer dataUri={detail.pdfData} />
-            ) : (
-              <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                Aucun PDF compilé disponible pour ce dossier.
-              </div>
-            )}
-          </div>
         </DialogContent>
       </Dialog>
     </div>
