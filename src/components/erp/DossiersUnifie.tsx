@@ -749,10 +749,20 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
       toast.error("Dossier source introuvable — réimportez les documents");
       return;
     }
-    const bytes = await compileGlobalDossierBytes(base, [], {
-      coverAtEnd: true,
-      title: undefined,
-    } as never as { coverAtEnd: boolean });
+    const bytes = await compileGlobalDossierBytes(
+      base,
+      [],
+      {
+        title: `Dossier d'intervention — ${interventionName}`,
+        patient: PATIENT,
+        intervention: interventionName,
+        organisme: ORG,
+        mode: "PEC",
+        labels,
+      },
+      { rotateLast: scenario === "rotes", coverAtEnd: true },
+    );
+
     const dataUri = bytesToDataUri(bytes);
     setCompiled(dataUri);
     if (dossierId) st.updateDossier(dossierId, { pdfData: dataUri });
