@@ -22,7 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { MODES, ORGANISMES, type Mode } from "@/lib/erp/catalog";
+import { MODES, type Mode } from "@/lib/erp/catalog";
+import { useAdmin } from "@/store/admin-store";
 import { useErp, type Intervention } from "@/store/erp-store";
 import { FilterInput, Pagination, Panel, Segmented } from "./ui-bits";
 import { cn } from "@/lib/utils";
