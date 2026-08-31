@@ -182,11 +182,20 @@ export function Dossiers() {
       setViewerUrl(detail.pdfData);
       return;
     }
-    buildDossierPdf(detail, names[detail.interventionId] ?? "—", orgLabel(detail.org)).then(
-      (doc) => {
-        if (!cancelled) setViewerUrl(doc.output("datauristring"));
-      },
-    );
+    // Repli : document de démonstration assemblé (Ouassim BEN MESSAOUD — Dossier conforme)
+    fetchReferenceDossierBytes(referenceAsset).then(async (bytes) => {
+      if (cancelled) return;
+      if (bytes) {
+        setViewerUrl(bytesToDataUri(bytes));
+        return;
+      }
+      const doc = await buildDossierPdf(
+        detail,
+        names[detail.interventionId] ?? "—",
+        orgLabel(detail.org),
+      );
+      if (!cancelled) setViewerUrl(doc.output("datauristring"));
+    });
     return () => {
       cancelled = true;
     };
