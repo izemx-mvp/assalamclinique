@@ -241,13 +241,7 @@ const INITIAL_EMAILS: EmailsConfig = {
       to: ["admissions@clinique-assalam.ma"],
       subject: "Dossier PEC non conforme — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
-    },
-    pec_verif: {
-      to: ["administration@clinique-assalam.ma"],
-      subject: "Dossier PEC à vérifier — {NUM_DOSSIER} — {PATIENT}",
-      body:
-        "Bonjour,\n\nLe contrôle IA du dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
+        "Bonjour,\n\nLe dossier de PEC {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\nÉléments à vérifier : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de compléter ou de vérifier le dossier avant nouvelle soumission.\n\nClinique Assalam",
     },
     exp_ok: {
       to: ["pec@cnss.ma"],
@@ -259,13 +253,7 @@ const INITIAL_EMAILS: EmailsConfig = {
       to: ["admissions@clinique-assalam.ma"],
       subject: "Dossier Expédition non conforme — {NUM_DOSSIER} — {PATIENT}",
       body:
-        "Bonjour,\n\nLe dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\n\nMerci de compléter le dossier avant nouvelle soumission.\n\nClinique Assalam",
-    },
-    exp_verif: {
-      to: ["administration@clinique-assalam.ma"],
-      subject: "Dossier Expédition à vérifier — {NUM_DOSSIER} — {PATIENT}",
-      body:
-        "Bonjour,\n\nLe contrôle IA du dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) n'a pas permis de déterminer certains éléments.\nÉléments à vérifier manuellement : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de procéder à une vérification humaine avant transmission.\n\nClinique Assalam",
+        "Bonjour,\n\nLe dossier d'Expédition {NUM_DOSSIER} ({PATIENT} — {INTERVENTION} — {ORGANISME}) est déclaré NON CONFORME.\nPièces manquantes : {PIECES_MANQUANTES}\nAnomalies détectées : {ANOMALIES_DETECTEES}\nÉléments à vérifier : {ELEMENTS_A_VERIFIER}\nPièces concernées : {PIECES_CONCERNEES}\n\nMerci de compléter ou de vérifier le dossier avant nouvelle soumission.\n\nClinique Assalam",
     },
   },
 };
@@ -399,7 +387,7 @@ type Actions = {
   removeUtilisateur: (id: string) => void;
 };
 
-const KEY = "assalam-erp-admin-v2";
+const KEY = "assalam-erp-admin-v3";
 
 const FALLBACK: State = {
   organismes: INITIAL_ORGANISMES,
