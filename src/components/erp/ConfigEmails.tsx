@@ -113,7 +113,7 @@ export function ConfigEmails() {
 
       <Panel
         title="Modèles de transmission"
-        subtitle="Deux niveaux : phase du workflow (PEC / Expédition) puis issue du contrôle IA"
+        subtitle="Deux niveaux : phase du workflow (PEC / Expédition) puis issue du contrôle IA — un dossier « À vérifier » utilise le modèle « Dossier non conforme »"
         action={
           <Button
             className="rounded-xl"
