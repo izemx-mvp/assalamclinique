@@ -114,7 +114,7 @@ export function ConfigEmails() {
 
       <Panel
         title="Modèles de transmission"
-        subtitle="Quatre scénarios de sortie selon le mode et le résultat du contrôle IA"
+        subtitle="Deux niveaux : phase du workflow (PEC / Expédition) puis issue du contrôle IA"
         action={
           <Button
             className="rounded-xl"
@@ -124,15 +124,31 @@ export function ConfigEmails() {
           </Button>
         }
       >
-        <div className="mb-4 flex flex-wrap gap-2">
-          {SCENARIOS.map((s) => (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {PHASES.map((p) => (
             <button
-              key={s.key}
-              onClick={() => setKey(s.key)}
+              key={p.key}
+              onClick={() => setPhase(p.key)}
               className={cn(
                 "rounded-full px-4 py-2 text-xs font-medium transition-all",
-                key === s.key
+                phase === p.key
                   ? "glow-ring bg-primary text-primary-foreground"
+                  : "glass-soft text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div className="mb-4 flex flex-wrap gap-2 border-t border-border pt-3">
+          {ISSUES.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => setIssue(s.key)}
+              className={cn(
+                "rounded-full px-4 py-1.5 text-xs font-medium transition-all",
+                issue === s.key
+                  ? cn("glass glow-ring", s.tone)
                   : "glass-soft text-muted-foreground hover:text-foreground",
               )}
             >
@@ -140,6 +156,7 @@ export function ConfigEmails() {
             </button>
           ))}
         </div>
+
 
         <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
           <div className="flex flex-col gap-4">
