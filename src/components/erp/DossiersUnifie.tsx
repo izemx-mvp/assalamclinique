@@ -529,7 +529,9 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     ? null
     : missing.length > 0
       ? "Non conforme"
-      : etatOfScenario(scenario);
+      : scenario === "manquant"
+        ? "Conforme"
+        : etatOfScenario(scenario);
 
   /* ------------------------- Ingestion étape 1 ------------------------- */
 
