@@ -739,14 +739,13 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
     setRunning(false);
     setAuditRan(true);
 
-    const currentEtat: EtatDossier =
-      missing.length > 0 ? "Non conforme" : etatOfScenario(scenario);
+    const currentEtat: EtatDossier = etat ?? "Non conforme";
     const items = await buildDossierItems(extras, labels);
     if (dossierId) {
       st.updateDossier(dossierId, { etat: currentEtat, audit: summary, items });
     } else {
       const id = st.commitDossier("Audité", undefined, items, {
-        source: importMode === "global" ? "global" : "standard",
+        source: globalDossierName ? "global" : "standard",
         patient: PATIENT,
         interventionId,
         org: ORG,
