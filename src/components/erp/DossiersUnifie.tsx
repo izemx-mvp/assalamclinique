@@ -1049,32 +1049,33 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
 
       {step === 2 && (
         <div className="flex flex-col gap-5">
-          <Panel
-            title="Journal d'Audit IA"
-            action={
-              <span className="text-[11px] text-muted-foreground">
-                {auditRan ? "Contrôle effectué" : "Contrôle non lancé"}
-              </span>
-            }
-          >
-            {log.length === 0 ? (
-              <p className="glass-soft rounded-2xl px-4 py-10 text-center text-sm text-muted-foreground">
-                En attente du lancement de l'analyse IA…
-              </p>
-            ) : (
-              <ol className="relative flex flex-col gap-3 pl-6">
-                <span className="absolute top-2 bottom-2 left-2 w-px bg-border" />
-                {log.map((s, i) => (
-                  <AuditStepCard key={s.id} step={s} index={i} />
-                ))}
-              </ol>
-            )}
-          </Panel>
-
           {auditRan && etat && (
             <Panel
               title="Résultats et synthèse du contrôle"
-              action={<EtatBadge etat={etat} />}
+              action={
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <EtatBadge etat={etat} />
+                  {etat !== "Conforme" && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        className="rounded-xl"
+                        disabled={running}
+                        onClick={runAudit}
+                      >
+                        <Sparkles className="size-4" /> Relancer le contrôle
+                      </Button>
+                      <Button
+                        className="rounded-xl bg-amber-500 text-white hover:bg-amber-600"
+                        onClick={() => setMailOpen(true)}
+                      >
+                        <Mail className="size-4" />
+                        {mailSent ? "E-mail envoyé" : "Envoyer l'e-mail à l'administration"}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              }
             >
               <div className="flex flex-col gap-3">
                 {etat === "Conforme" && (
@@ -1131,19 +1132,56 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
                 {etat !== "Conforme" && (
                   <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-3 text-xs text-amber-400">
                     L'étape « Aperçu et Transmission » est réservée aux dossiers conformes. Utilisez
-                    le bouton « Envoyer l'e-mail à l'administration » en haut de l'écran.
+                    le bouton « Envoyer l'e-mail à l'administration » ci-dessus.
                   </p>
                 )}
               </div>
             </Panel>
           )}
+
+          <Panel
+            title="Journal d'Audit IA"
+            action={
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  {auditRan ? "Contrôle effectué" : "Contrôle non lancé"}
+                </span>
+                {log.length > 0 && (
+                  <Button className="rounded-xl" disabled={running} onClick={runAudit}>
+                    <Sparkles className="size-4" />
+                    {auditRan ? "Relancer l'analyse" : "Lancer l'analyse"}
+                  </Button>
+                )}
+              </div>
+            }
+          >
+            {log.length === 0 ? (
+              <div className="glass-soft flex flex-col items-center gap-3 rounded-2xl px-4 py-10 text-center">
+                <p className="text-sm text-muted-foreground">
+                  En attente du lancement de l'analyse IA…
+                </p>
+                <Button className="rounded-xl" disabled={running} onClick={runAudit}>
+                  <Sparkles className="size-4" /> Lancer l'analyse
+                </Button>
+              </div>
+            ) : (
+              <ol className="relative flex flex-col gap-3 pl-6">
+                <span className="absolute top-2 bottom-2 left-2 w-px bg-border" />
+                {log.map((s, i) => (
+                  <AuditStepCard key={s.id} step={s} index={i} />
+                ))}
+              </ol>
+            )}
+          </Panel>
         </div>
       )}
 
       {step === 3 && (
         <Panel
           title="Aperçu et Transmission"
-          subtitle={compiled ? pdfName : "Générez le dossier compilé (page de garde en fin de document)"}
+          subtitle={
+            compiled ? pdfName : "Générez le dossier compilé (page de garde en fin de document)"
+          }
         >
           <div className="glass-soft grid min-h-[420px] place-items-center overflow-hidden rounded-2xl p-3">
             {compiled ? (
@@ -1155,13 +1193,79 @@ function DossierWizard({ onExit }: { onExit: () => void }) {
                 <FileText className="size-14 text-muted-foreground/60" />
                 <p className="text-sm font-medium">Aucun dossier compilé</p>
                 <p className="text-xs text-muted-foreground">
-                  Cliquez sur « Générer le dossier » en haut de l'écran
+                  Cliquez sur « Générer le dossier » ci-dessous
                 </p>
               </div>
             )}
           </div>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+            <Button className="rounded-xl" onClick={generate}>
+              <FileText className="size-4" /> {compiled ? "Régénérer le dossier" : "Générer le dossier"}
+            </Button>
+            <Button
+              variant="secondary"
+              className="rounded-xl"
+              disabled={!compiled}
+              onClick={download}
+            >
+              <Download className="size-4" /> Télécharger le PDF
+            </Button>
+            <Button
+              className="rounded-xl"
+              disabled={!compiled || transmitted}
+              onClick={() => {
+                if (!dossierId) return;
+                const res = sendDossierEmail(dossierId, "Conforme");
+                setTransmitted(true);
+                toast.success(`Dossier transmis (${res?.to ?? ORG})`);
+              }}
+            >
+              <Send className="size-4" /> Transmettre
+            </Button>
+          </div>
         </Panel>
       )}
+
+      <Dialog open={mailOpen} onOpenChange={setMailOpen}>
+        <DialogContent className="glass max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Notification à l'administration</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 text-sm">
+            <div className="glass-soft rounded-xl px-3 py-2">
+              <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                Destinataire(s)
+              </p>
+              <p className="mt-1 text-xs text-accent">{mailPreview.to}</p>
+            </div>
+            <div className="glass-soft rounded-xl px-3 py-2">
+              <p className="text-[11px] tracking-wide text-muted-foreground uppercase">Objet</p>
+              <p className="mt-1 text-xs">{mailPreview.subject}</p>
+            </div>
+            <div className="glass-soft max-h-[40vh] overflow-auto rounded-xl px-3 py-2">
+              <p className="text-[11px] tracking-wide text-muted-foreground uppercase">Message</p>
+              <pre className="mt-1 font-sans text-xs whitespace-pre-wrap text-foreground/90">
+                {mailPreview.body}
+              </pre>
+            </div>
+          </div>
+          <DialogFooter className="sm:justify-end">
+            <Button variant="secondary" className="rounded-xl" onClick={() => setMailOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              className="rounded-xl bg-amber-500 text-white hover:bg-amber-600"
+              onClick={() => {
+                sendAdminMail();
+                setMailOpen(false);
+              }}
+            >
+              <Mail className="size-4" /> Envoyer l'e-mail
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
