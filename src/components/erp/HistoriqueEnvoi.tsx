@@ -8,8 +8,12 @@ import { sendDossierEmail } from "@/lib/erp/notify";
 import { useAdmin } from "@/store/admin-store";
 import { useErp, type DossierRecord } from "@/store/erp-store";
 import { EtatBadge } from "./DossiersUnifie";
-import { FilterInput, PageHeader, Pagination, Panel } from "./ui-bits";
+import { FilterInput, PageHeader, Pagination, Panel, StatusPill } from "./ui-bits";
 import { cn } from "@/lib/utils";
+
+/** Motif affiché en infobulle lorsque la transmission e-mail a échoué. */
+const MAIL_ERROR =
+  "Échec de la transmission : aucun accusé de remise reçu du serveur de messagerie. Relancez l'envoi.";
 
 const ETATS = [
   { value: "", label: "Tous les états", dot: "bg-muted-foreground" },
@@ -53,7 +57,8 @@ export function HistoriqueEnvoi() {
       has(ad.orgLabel(d.org), filters.org) &&
       (filters.mode === "" || (d.mode ?? "PEC") === filters.mode) &&
       (filters.etat === "" || etat === filters.etat) &&
-      (filters.envoye === "" || String(!!d.envoye) === filters.envoye)
+      (filters.envoye === "" ||
+        (filters.envoye === "ok" ? !!d.envoye : !d.envoye))
     );
   });
 
@@ -200,11 +205,11 @@ export function HistoriqueEnvoi() {
                     <option value="" className="bg-popover">
                       Tous
                     </option>
-                    <option value="true" className="bg-popover">
-                      Envoyé
+                    <option value="ok" className="bg-popover">
+                      🟢 Succès
                     </option>
-                    <option value="false" className="bg-popover">
-                      Non envoyé
+                    <option value="ko" className="bg-popover">
+                      🔴 Échec
                     </option>
                   </select>
                 </th>
@@ -231,9 +236,13 @@ export function HistoriqueEnvoi() {
                   </td>
                   <td className="px-3 py-3 text-[11px]">
                     {d.envoye ? (
-                      <span className="text-success">Envoyé · {d.sentAt ?? d.createdAt}</span>
+                      <span title={`Envoyé le ${d.sentAt ?? d.createdAt}`}>
+                        <StatusPill tone="green">Succès · {d.sentAt ?? d.createdAt}</StatusPill>
+                      </span>
                     ) : (
-                      <span className="text-muted-foreground">Non envoyé</span>
+                      <span title={MAIL_ERROR}>
+                        <StatusPill tone="red">Échec</StatusPill>
+                      </span>
                     )}
                   </td>
                   <td className="px-3 py-3 text-[11px] text-muted-foreground">
@@ -268,8 +277,11 @@ export function HistoriqueEnvoi() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="size-8 hover:text-accent"
-                        title="Renvoyer l'e-mail"
+                        className={cn(
+                          "size-8 hover:text-accent",
+                          !d.envoye && "text-amber-400 hover:text-amber-300",
+                        )}
+                        title={d.envoye ? "Renvoyer l'e-mail" : "Relancer l'envoi (échec)"}
                         onClick={() => resend(d)}
                       >
                         <Mail className="size-4" />
