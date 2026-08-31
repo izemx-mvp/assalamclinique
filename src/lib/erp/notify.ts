@@ -22,6 +22,10 @@ export function renderTemplate(text: string, d: DossierRecord, interventionName:
     .replaceAll("{ORGANISME}", d.org)
     .replaceAll("{STATUT_GLOBAL}", d.etat ?? "—")
     .replaceAll("{PIECES_MANQUANTES}", a?.missing.join(", ") || "Aucune")
+    .replaceAll(
+      "{PIECES_CONCERNEES}",
+      [...(a?.missing ?? []), ...(a?.infos ?? [])].join(", ") || "Aucune",
+    )
     .replaceAll("{ANOMALIES_DETECTEES}", a?.rules.join(", ") || "Aucune")
     .replaceAll("{ELEMENTS_A_VERIFIER}", a?.infos.join(", ") || "Aucun")
     .replaceAll("{CORRECTIONS_AUTOMATIQUES}", a?.corrections.join(", ") || "Aucune");
