@@ -369,10 +369,17 @@ function Referentiel({ interventionId }: { interventionId: string }) {
   const [newDoc, setNewDoc] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
 
+  const ad = useAdmin();
+  const actifs = ad.organismes.filter((o) => o.active);
+  const associes = ad.orgsFor(interventionId);
+  const orgsDispo = actifs.filter((o) => associes.includes(o.id));
+  const orgsAbsents = actifs.filter((o) => !associes.includes(o.id));
+
   const pieceLabel = useMemo(
     () => Object.fromEntries(st.pieces.map((p) => [p.id, p.label])),
     [st.pieces],
   );
+
 
   return (
     <div className="w-full">
